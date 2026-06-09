@@ -2,7 +2,7 @@ name: Now On Tap Pipeline
 
 on:
   schedule:
-    - cron: '0 1 * * *'   # 毎日 JST 10:00 (UTC 01:00)
+    - cron: '0 20 * * *'  # 毎日 JST 05:00 (UTC 20:00 前日)
   workflow_dispatch:        # GitHub UI から手動実行
 
 jobs:
