@@ -1,0 +1,66 @@
+-- i18n カラム追加
+alter table styles add column if not exists name_ja text;
+alter table bars   add column if not exists name_en text;
+alter table bars   add column if not exists area_en text;
+
+-- styles: name_ja シード
+update styles set name_ja = '一般的なIPA'         where name = 'IPA';
+update styles set name_ja = 'ヘイジーIPA'         where name = 'Hazy IPA';
+update styles set name_ja = 'ウエストコーストIPA'  where name = 'West Coast IPA';
+update styles set name_ja = 'コールドIPA'         where name = 'Cold IPA';
+update styles set name_ja = 'セッションIPA'        where name = 'Session IPA';
+update styles set name_ja = 'ダブルIPA'           where name = 'DIPA';
+update styles set name_ja = 'ペールエール'         where name = 'Pale Ale';
+update styles set name_ja = 'ブラックIPA'         where name = 'Black IPA';
+update styles set name_ja = 'ピルスナー'           where name = 'Pilsner';
+update styles set name_ja = 'ラガー'              where name = 'Lager';
+update styles set name_ja = 'ヘレス'              where name = 'Helles';
+update styles set name_ja = 'ケルシュ'             where name = 'Kölsch';
+update styles set name_ja = 'スタウト'             where name = 'Stout';
+update styles set name_ja = 'インペリアルスタウト'  where name = 'Imperial Stout';
+update styles set name_ja = 'ポーター'             where name = 'Porter';
+update styles set name_ja = 'シュヴァルツビア'      where name = 'Schwarzbier';
+update styles set name_ja = 'セゾン'              where name = 'Saison';
+update styles set name_ja = 'ベルジャンエール'      where name = 'Belgian Ale';
+update styles set name_ja = 'ヴィットビア'         where name = 'Witbier';
+update styles set name_ja = 'ヴァイツェン'         where name = 'Wheat';
+update styles set name_ja = 'ヘーフェヴァイツェン'  where name = 'Hefeweizen';
+update styles set name_ja = 'サワー'              where name = 'Sour';
+update styles set name_ja = 'ゴーゼ'              where name = 'Gose';
+update styles set name_ja = 'ベルリナーヴァイセ'    where name = 'Berliner Weisse';
+update styles set name_ja = 'ランビック'           where name = 'Lambic';
+update styles set name_ja = 'アンバーエール'        where name = 'Amber Ale';
+update styles set name_ja = 'レッドエール'         where name = 'Red Ale';
+update styles set name_ja = 'ブラウンエール'        where name = 'Brown Ale';
+update styles set name_ja = 'バーレーワイン'        where name = 'Barleywine';
+update styles set name_ja = 'フルーツビール'        where name = 'Fruit Beer';
+update styles set name_ja = 'スパイス・ハーブ'      where name = 'Spice/Herb';
+update styles set name_ja = 'バレルエイジド'        where name = 'Barrel Aged';
+update styles set name_ja = 'サイダー'             where name = 'Cider';
+update styles set name_ja = 'ナイトロ'             where name = 'Nitro';
+
+-- bars: area_en シード（エリア単位で一括更新）
+update bars set area_en = 'Shibuya'              where area = '渋谷';
+update bars set area_en = 'Ebisu'                where area = '恵比寿';
+update bars set area_en = 'Shinjuku'             where area = '新宿';
+update bars set area_en = 'Ikebukuro'            where area = '池袋';
+update bars set area_en = 'Harajuku'             where area = '原宿';
+update bars set area_en = 'Shimbasshi'           where area = '新橋';
+update bars set area_en = 'Hamamatsucho'         where area = '浜松町';
+update bars set area_en = 'Tamachi'              where area = '田町';
+update bars set area_en = 'Toranomon'            where area = '虎ノ門';
+update bars set area_en = 'Ginza'                where area = '銀座';
+update bars set area_en = 'Yaesu'                where area = '八重洲';
+update bars set area_en = 'Tokyo Torch'          where area = '東京トーチ';
+update bars set area_en = 'Otemachi'             where area = '大手町';
+update bars set area_en = 'Mitsukoshimae'        where area = '三越前';
+update bars set area_en = 'Kanda'                where area = '神田';
+update bars set area_en = 'Akihabara'            where area = '秋葉原';
+update bars set area_en = 'Jimbocho'             where area = '神保町';
+update bars set area_en = 'Korakuen'             where area = '後楽園';
+update bars set area_en = 'Tokyo Dome City'      where area = '東京ドームシティ';
+update bars set area_en = 'Nippori'              where area = '日暮里';
+update bars set area_en = 'Nakano'               where area = '中野';
+update bars set area_en = 'Koenji'               where area = '高円寺';
+update bars set area_en = 'Kichijoji'            where area = '吉祥寺';
+update bars set area_en = 'Mitaka'               where area = '三鷹';
