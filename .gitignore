@@ -2,7 +2,11 @@ node_modules/
 .env
 data/session.json
 data/screenshots/
+data/debug-*.png
+data/tap-lists.json
+scraper/debug-*.js
 frontend/.env.local
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+logs/
