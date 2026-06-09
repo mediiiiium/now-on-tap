@@ -19,7 +19,7 @@ export default async function Home() {
           <Image src="/logo.png" alt="Now On Tap" width={44} height={44} className="rounded-xl" />
           <div>
             <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none">Now On Tap</h1>
-            <p className="text-xs text-gray-400 mt-0.5">東京のクラフトビール、いまなにがある？</p>
+            <p className="text-xs text-gray-400 mt-0.5">Walk in knowing.</p>
           </div>
         </div>
       </header>
