@@ -19,7 +19,7 @@ export default async function Home() {
           <Image src="/nowontap_logo.png" alt="Now On Tap" width={96} height={96} />
           <div>
             <h1 className="text-3xl text-gray-900 leading-none" style={{ fontFamily: 'var(--font-permanent-marker)' }}>Now On Tap</h1>
-            <p className="text-sm text-gray-400 mt-1" style={{ fontFamily: 'var(--font-permanent-marker)' }}>Walk in knowing.</p>
+            <p className="text-xl text-gray-400 mt-1" style={{ fontFamily: 'var(--font-permanent-marker)' }}>Walk in knowing.</p>
           </div>
         </div>
       </header>
