@@ -16,7 +16,7 @@ export default async function Home() {
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Image src="/logo.png" alt="Now On Tap" width={44} height={44} className="rounded-xl" />
+          <Image src="/logo.png" alt="Now On Tap" width={88} height={88} className="rounded-xl" />
           <div>
             <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none">Now On Tap</h1>
             <p className="text-xs text-gray-400 mt-0.5">Walk in knowing.</p>
