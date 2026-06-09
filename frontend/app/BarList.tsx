@@ -291,7 +291,7 @@ export default function BarList({ bars }: { bars: Bar[] }) {
   if (!axis) {
     return (
       <div className="flex flex-col items-center gap-3 mt-6">
-        <p className="text-sm text-gray-400 mb-1">どこで飲む？</p>
+        <p className="text-sm text-gray-400 mb-1">何を、どこで飲む？</p>
         {AXIS_OPTIONS.map(({ key, label, sub }) => (
           <button key={key} onClick={() => setAxis(key)}
             className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl px-6 py-4 text-left hover:border-amber-400 hover:shadow-sm transition-all">

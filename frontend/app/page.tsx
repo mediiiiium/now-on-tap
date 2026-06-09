@@ -16,10 +16,10 @@ export default async function Home() {
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Image src="/nowontap_logo.png" alt="Now On Tap" width={88} height={88} className="rounded-xl" />
+          <Image src="/nowontap_logo.png" alt="Now On Tap" width={72} height={72} />
           <div>
-            <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none">Now On Tap</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Walk in knowing.</p>
+            <h1 className="text-3xl text-gray-900 leading-none" style={{ fontFamily: 'var(--font-permanent-marker)' }}>Now On Tap</h1>
+            <p className="text-sm text-gray-400 mt-1" style={{ fontFamily: 'var(--font-permanent-marker)' }}>Walk in knowing.</p>
           </div>
         </div>
       </header>
