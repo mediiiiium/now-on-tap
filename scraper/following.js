@@ -1,5 +1,4 @@
 const { chromium } = require('playwright');
-const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
@@ -15,51 +14,50 @@ async function getFollowing(username) {
   const page = await context.newPage();
 
   try {
-    // プロフィールページを開く
+    // ユーザーIDをAPIで取得
     await page.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
-    // フォロー中リンクをクリック（「フォロー中N人」のテキストを含むリンク or span）
-    const followingLink = page.locator('a:has-text("フォロー中"), span:has-text("フォロー中")').first();
-    await followingLink.waitFor({ state: 'visible', timeout: 10000 });
-    await followingLink.click();
-    await page.waitForTimeout(2000);
+    const userId = await page.evaluate(() => {
+      const scripts = Array.from(document.querySelectorAll('script'));
+      for (const s of scripts) {
+        const m = s.textContent.match(/"pk":"(\d+)"|"id":"(\d+)"/);
+        if (m) return m[1] || m[2];
+      }
+      return null;
+    });
 
-    // モーダルが開くのを待つ
-    const modal = page.locator('[role="dialog"]');
-    await modal.waitFor({ state: 'visible', timeout: 10000 });
+    if (!userId) throw new Error('ユーザーIDが取得できませんでした');
+    console.log(`@${username} ID: ${userId}`);
 
-    // スクロールしながら全員取得
-    const following = new Set();
-    let prevCount = 0;
-    let noChangeCount = 0;
+    // GraphQL APIでフォローリスト取得
+    const following = [];
+    let after = null;
+    let hasNext = true;
 
-    while (noChangeCount < 3) {
-      // 現在表示されているユーザー名を取得
-      const usernames = await modal.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('[role="dialog"] a[href^="/"]'));
-        return links
-          .map(a => a.getAttribute('href').replace(/\//g, ''))
-          .filter(u => u && !u.includes('?') && u.length > 0);
-      });
+    while (hasNext) {
+      const variables = JSON.stringify({ id: userId, first: 50, ...(after ? { after } : {}) });
+      const url = `https://www.instagram.com/graphql/query/?query_hash=3dec7e2c57367ef3da3d987d89f9dbc8&variables=${encodeURIComponent(variables)}`;
 
-      usernames.forEach(u => following.add(u));
+      const response = await page.evaluate(async (url) => {
+        const res = await fetch(url, { credentials: 'include' });
+        return res.json();
+      }, url);
 
-      if (following.size === prevCount) {
-        noChangeCount++;
-      } else {
-        noChangeCount = 0;
-        prevCount = following.size;
+      const edges = response?.data?.user?.edge_follow?.edges ?? [];
+      const pageInfo = response?.data?.user?.edge_follow?.page_info;
+
+      for (const edge of edges) {
+        following.push(edge.node.username);
       }
 
-      // モーダル内をスクロール
-      await modal.evaluate(el => el.scrollTop += 500);
-      await page.waitForTimeout(800);
+      hasNext = pageInfo?.has_next_page ?? false;
+      after = pageInfo?.end_cursor ?? null;
+      await page.waitForTimeout(500);
     }
 
-    const result = [...following].filter(u => u !== username);
-    console.log(`@${username} のフォロー中: ${result.length}件`);
-    return result;
+    console.log(`@${username} のフォロー中: ${following.length}件`);
+    return following;
 
   } finally {
     await browser.close();
@@ -71,8 +69,6 @@ module.exports = { getFollowing };
 if (require.main === module) {
   const username = process.argv[2] || process.env.INSTAGRAM_USERNAME;
   getFollowing(username)
-    .then(list => {
-      console.log(list);
-    })
+    .then(list => console.log(list))
     .catch(console.error);
 }
