@@ -162,7 +162,7 @@ function AreaView({ bars }: { bars: Bar[] }) {
 
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none mb-5">
+      <div className="flex gap-2 flex-wrap mb-5">
         <Chip label="すべて" active={!selectedZone} onClick={() => setSelectedZone(null)} />
         {availableZones.map(z => (
           <Chip key={z.label} label={z.label} active={selectedZone === z.label}
