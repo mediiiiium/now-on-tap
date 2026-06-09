@@ -52,14 +52,15 @@ nowontap.mediiiiium.com に表示
 ## スケジューリング
 
 GitHub Actions（`.github/workflows/pipeline.yml`）で管理。
-Mac不要、クラウド上で完結する。
+Mac不要、クラウド上で完結する。pmset による Mac 自動起動は不要。
 
-```yaml
-on:
-  schedule:
-    - cron: '0 1 * * *'   # 毎日 JST 10:00
-  workflow_dispatch:        # GitHub UI から手動実行
-```
+| ジョブ | スケジュール | 内容 |
+|---|---|---|
+| `feed` | 毎日 JST 05:00 | フィードスクレイプ → DB保存 → Cloudflareデプロイ |
+| `all-accounts` | 毎週木 JST 05:00 | 全53アカウント巡回 → DB保存 → Cloudflareデプロイ |
+| `alert-report` | 毎週金 JST 06:00 | アカウント診断 → Slackに送信 |
+
+手動実行は GitHub の Actions タブ → Now On Tap Pipeline → Run workflow。
 
 パイプライン完了後、Cloudflare Deploy Hook を叩いてフロントを自動再デプロイ。
 
