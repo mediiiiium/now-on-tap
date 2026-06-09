@@ -2,38 +2,64 @@ name: Now On Tap Pipeline
 
 on:
   schedule:
-    - cron: '0 20 * * *'  # 毎日 JST 05:00 (UTC 20:00 前日)
-  workflow_dispatch:        # GitHub UI から手動実行
+    - cron: '0 20 * * *'    # 毎日    JST 05:00 — フィードスクレイプ
+    - cron: '0 20 * * 3'    # 毎週木  JST 05:00 — 全アカウント巡回
+    - cron: '0 21 * * 4'    # 毎週金  JST 06:00 — アラートレポート
+  workflow_dispatch:          # GitHub UI から手動実行
+
+env:
+  SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+  ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
+  SLACK_WEBHOOK_URL:    ${{ secrets.SLACK_WEBHOOK_URL }}
 
 jobs:
-  run-pipeline:
+  # ── 毎日 05:00 フィードスクレイプ ──────────────────────────
+  feed:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 20 * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright Chromium
-        run: npx playwright install chromium --with-deps
-
-      - name: Write session.json
-        run: echo '${{ secrets.INSTAGRAM_SESSION_JSON }}' > data/session.json
-
-      - name: Run pipeline
-        env:
-          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          ANTHROPIC_API_KEY:    ${{ secrets.ANTHROPIC_API_KEY }}
-          SLACK_WEBHOOK_URL:    ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: node pipeline.js
-
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: echo '${{ secrets.INSTAGRAM_SESSION_JSON }}' > data/session.json
+      - run: node pipeline.js
       - name: Trigger Cloudflare deploy
         run: curl -s -o /dev/null -w "%{http_code}" -d "" "${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}"
+
+  # ── 毎週木 05:00 全アカウント巡回 ─────────────────────────
+  all-accounts:
+    if: github.event.schedule == '0 20 * * 3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: echo '${{ secrets.INSTAGRAM_SESSION_JSON }}' > data/session.json
+      - run: node scraper/all-accounts.js
+      - name: Trigger Cloudflare deploy
+        run: curl -s -o /dev/null -w "%{http_code}" -d "" "${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}"
+
+  # ── 毎週金 06:00 アラートレポート ─────────────────────────
+  alert-report:
+    if: github.event.schedule == '0 21 * * 4'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: node scripts/alert-report.js
