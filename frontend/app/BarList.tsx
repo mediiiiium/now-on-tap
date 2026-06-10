@@ -84,7 +84,7 @@ function BarCard({ bar, highlightStyles, highlightBrewery }: {
   }, [bar.beers, highlightStyles, highlightBrewery]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${bar.has_tap_list ? 'border-gray-100' : 'border-gray-100 opacity-60'}`}>
       <div className="px-5 py-4 border-b border-gray-50">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -96,7 +96,9 @@ function BarCard({ bar, highlightStyles, highlightBrewery }: {
             )}
           </div>
           <div className="text-right shrink-0">
-            <span className="text-xs text-gray-400">{daysAgo(bar.last_updated)}</span>
+            {bar.last_updated && (
+              <span className="text-xs text-gray-400">{daysAgo(bar.last_updated)}</span>
+            )}
             {bar.post_url && (
               <a href={bar.post_url} target="_blank" rel="noopener noreferrer"
                 className="block text-xs text-amber-500 hover:text-amber-600 mt-0.5">
@@ -106,25 +108,29 @@ function BarCard({ bar, highlightStyles, highlightBrewery }: {
           </div>
         </div>
       </div>
-      <ul className="divide-y divide-gray-50">
-        {beers.map((beer: Beer, i: number) => (
-          <li key={i} className="px-5 py-3 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-medium text-gray-800 text-sm truncate">{val(beer.name) ?? '—'}</p>
-              {[val(beer.brewery), val(beer.style)].some(Boolean) && (
-                <p className="text-xs text-gray-400 truncate">
-                  {[val(beer.brewery), val(beer.style)].filter(Boolean).join(' · ')}
-                </p>
+      {bar.has_tap_list ? (
+        <ul className="divide-y divide-gray-50">
+          {beers.map((beer: Beer, i: number) => (
+            <li key={i} className="px-5 py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-800 text-sm truncate">{val(beer.name) ?? '—'}</p>
+                {[val(beer.brewery), val(beer.style)].some(Boolean) && (
+                  <p className="text-xs text-gray-400 truncate">
+                    {[val(beer.brewery), val(beer.style)].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
+              {val(beer.abv) && (
+                <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0">
+                  {val(beer.abv)}
+                </span>
               )}
-            </div>
-            {val(beer.abv) && (
-              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0">
-                {val(beer.abv)}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="px-5 py-4 text-xs text-gray-400">タップリストは各店舗にご確認ください。</p>
+      )}
     </div>
   );
 }
