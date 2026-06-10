@@ -312,8 +312,8 @@ export default function BarList({ bars }: { bars: Bar[] }) {
   return (
     <div>
       <button onClick={() => setAxis(null)}
-        className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors">
-        ← 選び直す
+        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 mb-5 transition-colors">
+        ↩ Back
       </button>
       {axis === 'area'    && <AreaView bars={bars} />}
       {axis === 'style'   && <StyleView bars={bars} />}
