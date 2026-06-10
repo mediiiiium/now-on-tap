@@ -313,7 +313,7 @@ export default function BarList({ bars }: { bars: Bar[] }) {
     <div>
       <button onClick={() => setAxis(null)}
         className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 mb-5 transition-colors">
-        ↩ Back
+        ‹ reselect
       </button>
       {axis === 'area'    && <AreaView bars={bars} />}
       {axis === 'style'   && <StyleView bars={bars} />}
