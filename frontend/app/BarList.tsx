@@ -32,35 +32,6 @@ const ZONES: { label: string; areas: string[] }[] = [
   { label: '上野・日暮里・浅草',       areas: ['上野', '日暮里', '浅草'] },
 ];
 
-// --- スタイル正規化 ---
-
-const STYLE_ALIASES: Record<string, string> = {
-  'american ipa': 'IPA', 'india pale ale': 'IPA', 'apa': 'IPA',
-  'hazy pale ale': 'Hazy IPA', 'hazy': 'Hazy IPA', 'juicy ipa': 'Hazy IPA',
-  'neipa': 'Hazy IPA', 'new england ipa': 'Hazy IPA',
-  'wcipa': 'West Coast IPA', 'wc ipa': 'West Coast IPA', 'west coast': 'West Coast IPA',
-  'double ipa': 'Imperial IPA', 'dipa': 'Imperial IPA', 'imperial ipa': 'Imperial IPA',
-  'ale': 'Pale Ale', 'english pale ale': 'Pale Ale',
-  'milk stout': 'Stout', 'irish dry stout': 'Stout',
-  'honey porter': 'Porter', 'baltic porter': 'Porter',
-  'farmhouse': 'Saison',
-  'german pilsner': 'Pilsner', 'italian pilsner': 'Pilsner', 'czech pilsner': 'Pilsner',
-  'sour ipa': 'Sour', 'sour ale': 'Sour', 'berliner weisse': 'Sour',
-  'weizen': 'Wheat Beer', 'hefeweizen': 'Wheat Beer', 'weiss': 'Wheat Beer',
-  'belgian white': 'Witbier', 'white ale': 'Witbier',
-  'red ale': 'Amber Ale', 'amber': 'Amber Ale',
-  'fruit ale': 'Fruit Beer',
-};
-
-function normalizeStyle(style: string | null): string | null {
-  if (!style) return null;
-  const key = style.toLowerCase().trim();
-  if (STYLE_ALIASES[key]) return STYLE_ALIASES[key];
-  for (const [alias, canonical] of Object.entries(STYLE_ALIASES)) {
-    if (key.includes(alias)) return canonical;
-  }
-  return style;
-}
 
 // --- BarCard ---
 
@@ -72,7 +43,7 @@ function BarCard({ bar, highlightStyles, highlightBrewery }: {
   const beers = useMemo(() => {
     if (highlightStyles && highlightStyles.size > 0) {
       return bar.beers.filter(b => {
-        const s = normalizeStyle(val(b.style));
+        const s = val(b.style);
         return s && highlightStyles.has(s);
       });
     }
@@ -192,7 +163,7 @@ function StyleView({ bars }: { bars: Bar[] }) {
     const count = new Map<string, number>();
     for (const bar of bars) {
       for (const beer of bar.beers) {
-        const s = normalizeStyle(val(beer.style));
+        const s = val(beer.style);
         if (s) count.set(s, (count.get(s) || 0) + 1);
       }
     }
@@ -211,7 +182,7 @@ function StyleView({ bars }: { bars: Bar[] }) {
     if (selectedStyles.size === 0) return bars;
     return bars.filter(bar =>
       bar.beers.some(b => {
-        const s = normalizeStyle(val(b.style));
+        const s = val(b.style);
         return s && selectedStyles.has(s);
       })
     );
