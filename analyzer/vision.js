@@ -1,31 +1,37 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-function makeImageContent(base64Image) {
+function makeImageContent(base64Image, mediaType = 'image/png') {
   return {
     type: 'image',
-    source: { type: 'base64', media_type: 'image/png', data: base64Image },
+    source: { type: 'base64', media_type: mediaType, data: base64Image },
   };
 }
 
 // ステップ1: Haikuでタップリストか否かだけ判定（安価・高速）
-async function classifyTapList(base64Image) {
+// 画像とキャプション両方を使い、どちらかでタップリストと判断できればtrue
+async function classifyTapList(base64Image, caption = null, mediaType = 'image/png') {
+  const captionSection = caption
+    ? `\n\n【投稿キャプション】\n${caption}\n`
+    : '';
+
   const response = await client.messages.create({
     model: 'claude-haiku-4-5',
     max_tokens: 64,
     messages: [{
       role: 'user',
       content: [
-        makeImageContent(base64Image),
+        makeImageContent(base64Image, mediaType),
         {
           type: 'text',
           text: `この画像はビアバーのInstagram投稿です。
-「現在タップで提供中のビール一覧（タップリスト）」が明示されているかを判定してください。
+画像またはキャプションのどちらかで「現在タップで提供中のビール一覧（タップリスト）」が明示されているかを判定してください。${captionSection}
 
-【タップリストと判定する条件】
+【タップリストと判定する条件（画像・キャプションいずれかで満たせばOK）】
 - 3種類以上のビール名が一覧形式で並んでいる
 - 「ON TAP」「NOW ON TAP」「TAP LIST」「現在のタップ」などの見出しがある
 - 各ビールにスタイル・度数・価格などの詳細情報が付いている
@@ -48,18 +54,18 @@ async function classifyTapList(base64Image) {
 }
 
 // ステップ2: Sonnetでビール情報を精度高く抽出
-async function extractBeers(base64Image, caption = null) {
+async function extractBeers(base64Image, caption = null, mediaType = 'image/png') {
   const captionSection = caption
     ? `\n\n【投稿キャプション（補助情報として活用してください）】\n${caption}\n`
     : '';
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    max_tokens: 4096,
     messages: [{
       role: 'user',
       content: [
-        makeImageContent(base64Image),
+        makeImageContent(base64Image, mediaType),
         {
           type: 'text',
           text: `この画像はビアバーのタップリスト（現在提供中のクラフトビール一覧）です。
@@ -108,20 +114,31 @@ async function extractBeers(base64Image, caption = null) {
 
   const text = response.content[0].text.trim()
     .replace(/^```json\n?/, '').replace(/\n?```$/, '');
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch {
+    // JSONが途中で切れた場合、最後の完全なオブジェクトまでを切り出して修復
+    const lastClose = text.lastIndexOf('},');
+    if (lastClose > 0) {
+      try { return JSON.parse(text.slice(0, lastClose + 1) + ']'); } catch {}
+    }
+    throw new Error(`JSON parse failed: ${text.slice(-100)}`);
+  }
 }
 
 async function analyzeTapList(imagePath, caption = null) {
+  const ext = path.extname(imagePath).toLowerCase();
+  const mediaType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
   const base64Image = fs.readFileSync(imagePath).toString('base64');
 
-  const isTapList = await classifyTapList(base64Image);
+  const isTapList = await classifyTapList(base64Image, caption, mediaType);
   if (!isTapList) {
     return { is_tap_list: false, beers: [] };
   }
 
   let beers = [];
   try {
-    beers = await extractBeers(base64Image, caption);
+    beers = await extractBeers(base64Image, caption, mediaType);
   } catch {
     // 抽出失敗時は判定だけ保存
   }
@@ -164,4 +181,4 @@ if (require.main === module) {
     .catch(console.error);
 }
 
-module.exports = { analyzeTapList };
+module.exports = { analyzeTapList, extractBeers };
