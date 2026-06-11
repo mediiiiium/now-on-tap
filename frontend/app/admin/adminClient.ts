@@ -21,6 +21,8 @@ export async function approveBrewery(id: number) {
 }
 
 export async function deleteBrewery(id: number) {
+  // 紐づくビールの brewery フィールドを NULL にしておかないと normalize が再登録してしまう
+  await sb.from('beers').update({ brewery: null, brewery_id: null }).eq('brewery_id', id);
   const { error } = await sb.from('breweries').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }
