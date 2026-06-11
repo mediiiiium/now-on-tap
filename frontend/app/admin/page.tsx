@@ -8,7 +8,7 @@ import BarCandidates, { BarCandidate } from './BarCandidates';
 import TapListAlerts, { TapListAlert } from './TapListAlerts';
 import { sb } from './adminClient';
 
-type Brewery = { id: number; name: string; name_ja: string | null; prefecture: string | null; website_url: string | null; untappd_url: string | null };
+type Brewery = { id: number; name: string; name_ja: string | null; prefecture: string | null; country: string | null; website_url: string | null; untappd_url: string | null };
 type Style = { id: number; name: string; category: string };
 
 const KML_URL = 'https://www.google.com/maps/d/kml?mid=1DaSgYBnJZnlWFmNFqvvHFqP6G_MxKGP4&forcekml=1';
@@ -90,7 +90,7 @@ function AdminContent() {
 
   useEffect(() => {
     Promise.all([
-      sb.from('breweries').select('id, name, name_ja, prefecture, website_url, untappd_url').eq('needs_review', true).order('created_at', { ascending: false }),
+      sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', true).order('created_at', { ascending: false }),
       sb.from('styles').select('id, name, category').eq('needs_review', true).order('created_at', { ascending: false }),
       fetchBarCandidates(),
       fetchTapListAlerts(),

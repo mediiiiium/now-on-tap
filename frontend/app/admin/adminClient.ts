@@ -6,7 +6,7 @@ export const sb = createClient(
 );
 
 export async function updateBrewery(id: number, oldName: string, fields: {
-  name?: string; name_ja?: string; prefecture?: string; website_url?: string; untappd_url?: string;
+  name?: string; name_ja?: string; prefecture?: string; country?: string; website_url?: string; untappd_url?: string;
 }) {
   if (fields.name && fields.name !== oldName) {
     await sb.from('brewery_aliases').upsert({ brewery_id: id, alias: oldName }, { onConflict: 'alias' });

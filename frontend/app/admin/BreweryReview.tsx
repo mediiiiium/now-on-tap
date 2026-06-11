@@ -8,6 +8,7 @@ type Brewery = {
   name: string;
   name_ja: string | null;
   prefecture: string | null;
+  country: string | null;
   website_url: string | null;
   untappd_url: string | null;
 };
@@ -20,6 +21,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
     name: brewery.name,
     name_ja: brewery.name_ja ?? '',
     prefecture: brewery.prefecture ?? '',
+    country: brewery.country ?? '日本',
     website_url: brewery.website_url ?? '',
     untappd_url: brewery.untappd_url ?? '',
   });
@@ -32,6 +34,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
         name: fields.name || undefined,
         name_ja: fields.name_ja || undefined,
         prefecture: fields.prefecture || undefined,
+        country: fields.country || undefined,
         website_url: fields.website_url || undefined,
         untappd_url: fields.untappd_url || undefined,
       });
@@ -53,6 +56,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
   }
 
   const busy = status === 'saving' || status === 'approved' || status === 'deleted';
+  const isAbroad = fields.country && fields.country !== '日本';
 
   if (status === 'approved') {
     return (
@@ -79,6 +83,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
       <tr className="bg-yellow-50 border-b">
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.name} onChange={e => setFields(f => ({ ...f, name: e.target.value }))} /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.name_ja} onChange={e => setFields(f => ({ ...f, name_ja: e.target.value }))} placeholder="日本語名" /></td>
+        <td className="px-3 py-2"><input className="w-20 border rounded px-2 py-1 text-sm" value={fields.country} onChange={e => setFields(f => ({ ...f, country: e.target.value }))} placeholder="国" /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.prefecture} onChange={e => setFields(f => ({ ...f, prefecture: e.target.value }))} placeholder="都道府県" /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.website_url} onChange={e => setFields(f => ({ ...f, website_url: e.target.value }))} placeholder="https://..." /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.untappd_url} onChange={e => setFields(f => ({ ...f, untappd_url: e.target.value }))} placeholder="https://untappd.com/..." /></td>
@@ -94,7 +99,12 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
     <tr className={`border-b transition-colors ${status === 'saved' ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
       <td className="px-3 py-2 text-sm font-medium">{fields.name}{status === 'saved' && <span className="ml-2 text-green-600 text-xs">✓</span>}</td>
       <td className="px-3 py-2 text-sm text-gray-600">{fields.name_ja || <span className="text-gray-300">—</span>}</td>
-      <td className="px-3 py-2 text-sm text-gray-600">{fields.prefecture || <span className="text-gray-300">—</span>}</td>
+      <td className="px-3 py-2 text-sm">
+        {isAbroad
+          ? <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">{fields.country}</span>
+          : <span className="text-gray-400 text-xs">🇯🇵</span>}
+      </td>
+      <td className="px-3 py-2 text-sm text-gray-500 text-xs">{fields.prefecture || <span className="text-gray-300">—</span>}</td>
       <td className="px-3 py-2 text-sm">{fields.website_url ? <a href={fields.website_url} target="_blank" className="text-blue-600 hover:underline">🔗</a> : <span className="text-gray-300">—</span>}</td>
       <td className="px-3 py-2 text-sm">{fields.untappd_url ? <a href={fields.untappd_url} target="_blank" className="text-blue-600 hover:underline">🍺</a> : <span className="text-gray-300">—</span>}</td>
       <td className="px-3 py-2 whitespace-nowrap space-x-2">
@@ -118,6 +128,7 @@ export default function BreweryReview({ breweries }: { breweries: Brewery[] }) {
           <tr className="bg-gray-100 text-xs text-gray-500 uppercase">
             <th className="px-3 py-2">Brewery (EN)</th>
             <th className="px-3 py-2">Brewery (JA)</th>
+            <th className="px-3 py-2">Country</th>
             <th className="px-3 py-2">Prefecture</th>
             <th className="px-3 py-2">Web</th>
             <th className="px-3 py-2">Untappd</th>
