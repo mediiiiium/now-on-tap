@@ -23,6 +23,8 @@ export type Bar = {
   bar_name_en: string | null; // 英語バー名
   area: string | null;
   area_en: string | null;     // 英語エリア名
+  website_url: string | null;
+  google_maps_url: string | null;
   last_updated: string | null;
   post_url: string | null;
   caption: string | null;     // Instagramキャプション
@@ -68,6 +70,8 @@ export async function getTapLists(): Promise<Bar[]> {
         bar_name_en: row.bar_name_en,
         area: row.area,
         area_en: row.area_en,
+        website_url: row.website_url ?? null,
+        google_maps_url: row.google_maps_url ?? null,
         last_updated: row.last_updated,
         post_url: row.post_url,
         caption: row.caption ?? null,
