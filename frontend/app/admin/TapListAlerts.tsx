@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { snoozeAlert, setBarStatus } from './adminClient';
+import { snoozeAlert } from './adminClient';
 
 export type TapListAlert = {
   username: string;
@@ -14,26 +14,14 @@ export type TapListAlert = {
   severity: string;
 };
 
-type RowStatus = 'idle' | 'loading' | 'snoozed' | 'inactive' | 'closed';
+type RowStatus = 'idle' | 'loading' | 'snoozed';
 
 function AlertRow({ alert }: { alert: TapListAlert }) {
   const [status, setStatus] = useState<RowStatus>('idle');
-  const busy = status === 'loading';
 
   async function handleSnooze() {
     setStatus('loading');
     try { await snoozeAlert(alert.username); setStatus('snoozed'); } catch { setStatus('idle'); }
-  }
-
-  async function handleInactive() {
-    setStatus('loading');
-    try { await setBarStatus(alert.username, 'inactive'); setStatus('inactive'); } catch { setStatus('idle'); }
-  }
-
-  async function handleClosed() {
-    if (!confirm(`@${alert.username} を閉店にしますか？`)) return;
-    setStatus('loading');
-    try { await setBarStatus(alert.username, 'closed'); setStatus('closed'); } catch { setStatus('idle'); }
   }
 
   if (status === 'snoozed') {
@@ -41,22 +29,6 @@ function AlertRow({ alert }: { alert: TapListAlert }) {
       <tr className="opacity-40 border-b bg-green-50">
         <td className="px-3 py-2 text-sm text-gray-400">@{alert.username}</td>
         <td colSpan={4} className="px-3 py-2 text-sm text-green-600">✓ 7日間スヌーズ</td>
-      </tr>
-    );
-  }
-  if (status === 'inactive') {
-    return (
-      <tr className="opacity-40 border-b bg-gray-50">
-        <td className="px-3 py-2 text-sm text-gray-400">@{alert.username}</td>
-        <td colSpan={4} className="px-3 py-2 text-sm text-gray-500">📵 SNS未稼動に設定</td>
-      </tr>
-    );
-  }
-  if (status === 'closed') {
-    return (
-      <tr className="opacity-40 border-b bg-red-50">
-        <td className="px-3 py-2 text-sm text-gray-400 line-through">@{alert.username}</td>
-        <td colSpan={4} className="px-3 py-2 text-sm text-red-500">🚪 閉店に設定</td>
       </tr>
     );
   }
@@ -73,15 +45,9 @@ function AlertRow({ alert }: { alert: TapListAlert }) {
         最終TL: {alert.lastTapList}
       </td>
       <td className="px-3 py-2 text-sm text-gray-500 max-w-xs">{alert.diagnosis}</td>
-      <td className="px-3 py-2 whitespace-nowrap space-x-1">
-        <button onClick={handleSnooze} disabled={busy} className="px-2 py-1 bg-gray-100 text-sm rounded hover:bg-gray-200 disabled:opacity-50">
-          {busy ? '処理中...' : 'スヌーズ'}
-        </button>
-        <button onClick={handleInactive} disabled={busy} className="px-2 py-1 bg-yellow-100 text-yellow-800 text-sm rounded hover:bg-yellow-200 disabled:opacity-50">
-          未稼動
-        </button>
-        <button onClick={handleClosed} disabled={busy} className="px-2 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 disabled:opacity-50">
-          閉店
+      <td className="px-3 py-2 whitespace-nowrap">
+        <button onClick={handleSnooze} disabled={status === 'loading'} className="px-2 py-1 bg-gray-100 text-sm rounded hover:bg-gray-200 disabled:opacity-50">
+          {status === 'loading' ? '処理中...' : 'スヌーズ'}
         </button>
       </td>
     </tr>
