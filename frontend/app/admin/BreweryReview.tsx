@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { updateBrewery, approveBrewery, deleteBrewery } from './adminClient';
+import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers } from './adminClient';
 
 type Brewery = {
   id: number;
@@ -50,7 +50,11 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
   }
 
   async function handleDelete() {
-    if (!confirm(`"${brewery.name}" を削除しますか？`)) return;
+    const beerCount = await countBreweryBeers(brewery.id);
+    const msg = beerCount > 0
+      ? `"${brewery.name}" を削除しますか？\n⚠️ このブルワリーには ${beerCount} 件のビールが紐づいています。`
+      : `"${brewery.name}" を削除しますか？`;
+    if (!confirm(msg)) return;
     setStatus('deleted');
     try { await deleteBrewery(brewery.id); } catch { setStatus('idle'); }
   }

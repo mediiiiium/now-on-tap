@@ -25,6 +25,11 @@ export async function deleteBrewery(id: number) {
   if (error) throw new Error(error.message);
 }
 
+export async function countBreweryBeers(id: number): Promise<number> {
+  const { count } = await sb.from('beers').select('id', { count: 'exact', head: true }).eq('brewery_id', id);
+  return count ?? 0;
+}
+
 export const STYLE_CATEGORIES = ['Hoppy', 'Lager', 'Dark', 'Belgian', 'Wheat', 'Sour', 'Malt', 'Strong', 'Other'];
 
 export async function updateStyle(id: number, fields: { name?: string; category?: string }) {
