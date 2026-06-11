@@ -77,8 +77,13 @@ async function fetchTapListAlerts(): Promise<{ alerts: TapListAlert[]; noPosts: 
     const tapListRate = acc.totalPosts > 0 ? Math.round(acc.tapListPosts / acc.totalPosts * 100) : 0;
     let diagnosis = '', severity = 'ok';
     const isActive = lastPostDate !== null && lastPostDate >= oneMonthAgo;
-    if (isActive && acc.totalPosts >= 5 && tapListRate === 0) { diagnosis = '🔴 投稿あり・TL未検出'; severity = 'error'; }
-    else if (isActive && acc.totalPosts >= 5 && lastTapListDate && lastTapListDate < oneMonthAgo) { diagnosis = '⚠️ TL投稿1ヶ月以上なし'; severity = 'warn'; }
+    if (isActive && acc.totalPosts >= 5) {
+      if (tapListRate === 0) {
+        diagnosis = '🔴 投稿あり・TL一度もなし'; severity = 'error';
+      } else if (lastTapListDate && lastTapListDate < oneMonthAgo) {
+        diagnosis = '⚠️ TL投稿1ヶ月以上なし'; severity = 'warn';
+      }
+    }
     if (severity !== 'ok') alerts.push({ username, totalPosts: acc.totalPosts, tapListPosts: acc.tapListPosts, tapListRate: `${tapListRate}%`, lastPost: daysSincePost !== null ? `${daysSincePost}日前` : 'なし', lastTapList: daysSinceTapList !== null ? `${daysSinceTapList}日前` : 'なし', diagnosis, severity });
   }
   const noPosts: NoPosts[] = (bars ?? [])
