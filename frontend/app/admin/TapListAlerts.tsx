@@ -78,7 +78,7 @@ function AlertRow({ alert }: { alert: TapListAlert }) {
           {busy ? '処理中...' : 'スヌーズ'}
         </button>
         <button onClick={handleInactive} disabled={busy} className="px-2 py-1 bg-yellow-100 text-yellow-800 text-sm rounded hover:bg-yellow-200 disabled:opacity-50">
-          SNS未稼動
+          未稼動
         </button>
         <button onClick={handleClosed} disabled={busy} className="px-2 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 disabled:opacity-50">
           閉店
