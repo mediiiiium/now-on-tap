@@ -30,6 +30,13 @@ export async function countBreweryBeers(id: number): Promise<number> {
   return count ?? 0;
 }
 
+export type BrewerySample = { beer_name: string; instagram_username: string };
+
+export async function getBrewerySamples(id: number): Promise<BrewerySample[]> {
+  const { data } = await sb.from('beers').select('name, instagram_username').eq('brewery_id', id).limit(3);
+  return (data ?? []).map(b => ({ beer_name: b.name, instagram_username: b.instagram_username }));
+}
+
 export const STYLE_CATEGORIES = ['Hoppy', 'Lager', 'Dark', 'Belgian', 'Wheat', 'Sour', 'Malt', 'Strong', 'Other'];
 
 export async function updateStyle(id: number, fields: { name?: string; category?: string }) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers } from './adminClient';
+import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers, getBrewerySamples, type BrewerySample } from './adminClient';
 
 type Brewery = {
   id: number;
@@ -16,6 +16,8 @@ type Brewery = {
 type RowStatus = 'idle' | 'saving' | 'saved' | 'approved' | 'deleted';
 
 function BreweryRow({ brewery }: { brewery: Brewery }) {
+  const [expanded, setExpanded] = useState(false);
+  const [samples, setSamples] = useState<BrewerySample[] | null>(null);
   const [editing, setEditing] = useState(false);
   const [fields, setFields] = useState({
     name: brewery.name,
@@ -99,24 +101,54 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
     );
   }
 
+  async function handleToggleSamples() {
+    if (expanded) { setExpanded(false); return; }
+    if (!samples) setSamples(await getBrewerySamples(brewery.id));
+    setExpanded(true);
+  }
+
   return (
-    <tr className={`border-b transition-colors ${status === 'saved' ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
-      <td className="px-3 py-2 text-sm font-medium">{fields.name}{status === 'saved' && <span className="ml-2 text-green-600 text-xs">✓</span>}</td>
-      <td className="px-3 py-2 text-sm text-gray-600">{fields.name_ja || <span className="text-gray-300">—</span>}</td>
-      <td className="px-3 py-2 text-sm">
-        {isAbroad
-          ? <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">{fields.country}</span>
-          : <span className="text-gray-400 text-xs">🇯🇵</span>}
-      </td>
-      <td className="px-3 py-2 text-sm text-gray-500 text-xs">{fields.prefecture || <span className="text-gray-300">—</span>}</td>
-      <td className="px-3 py-2 text-sm">{fields.website_url ? <a href={fields.website_url} target="_blank" className="text-blue-600 hover:underline">🔗</a> : <span className="text-gray-300">—</span>}</td>
-      <td className="px-3 py-2 text-sm">{fields.untappd_url ? <a href={fields.untappd_url} target="_blank" className="text-blue-600 hover:underline">🍺</a> : <span className="text-gray-300">—</span>}</td>
-      <td className="px-3 py-2 whitespace-nowrap space-x-2">
-        <button onClick={() => setEditing(true)} className="px-3 py-1 bg-gray-100 text-sm rounded hover:bg-gray-200">編集</button>
-        <button onClick={handleApprove} disabled={busy} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50">承認</button>
-        <button onClick={handleDelete} disabled={busy} className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 disabled:opacity-50">削除</button>
-      </td>
-    </tr>
+    <>
+      <tr className={`border-b transition-colors ${status === 'saved' ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
+        <td className="px-3 py-2 text-sm font-medium">
+          <button onClick={handleToggleSamples} className="mr-1 text-gray-400 hover:text-gray-600 text-xs">{expanded ? '▼' : '▶'}</button>
+          {fields.name}{status === 'saved' && <span className="ml-2 text-green-600 text-xs">✓</span>}
+        </td>
+        <td className="px-3 py-2 text-sm text-gray-600">{fields.name_ja || <span className="text-gray-300">—</span>}</td>
+        <td className="px-3 py-2 text-sm">
+          {isAbroad
+            ? <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">{fields.country}</span>
+            : <span className="text-gray-400 text-xs">🇯🇵</span>}
+        </td>
+        <td className="px-3 py-2 text-sm text-gray-500 text-xs">{fields.prefecture || <span className="text-gray-300">—</span>}</td>
+        <td className="px-3 py-2 text-sm">{fields.website_url ? <a href={fields.website_url} target="_blank" className="text-blue-600 hover:underline">🔗</a> : <span className="text-gray-300">—</span>}</td>
+        <td className="px-3 py-2 text-sm">{fields.untappd_url ? <a href={fields.untappd_url} target="_blank" className="text-blue-600 hover:underline">🍺</a> : <span className="text-gray-300">—</span>}</td>
+        <td className="px-3 py-2 whitespace-nowrap space-x-2">
+          <button onClick={() => setEditing(true)} className="px-3 py-1 bg-gray-100 text-sm rounded hover:bg-gray-200">編集</button>
+          <button onClick={handleApprove} disabled={busy} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50">承認</button>
+          <button onClick={handleDelete} disabled={busy} className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 disabled:opacity-50">削除</button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-gray-50 border-b">
+          <td colSpan={7} className="px-6 py-2">
+            {samples === null ? (
+              <span className="text-xs text-gray-400">読み込み中...</span>
+            ) : samples.length === 0 ? (
+              <span className="text-xs text-gray-400">紐づくビールなし</span>
+            ) : (
+              <ul className="space-y-0.5">
+                {samples.map((s, i) => (
+                  <li key={i} className="text-xs text-gray-600">
+                    {s.beer_name} <span className="text-gray-400">— @{s.instagram_username}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
