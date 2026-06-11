@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers, getBrewerySamples, type BrewerySample } from './adminClient';
 
+const jaRegex = /[぀-ゟ゠-ヿ一-鿿]/;
+
 type Brewery = {
   id: number;
   name: string;
@@ -112,7 +114,9 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
       <tr className={`border-b transition-colors ${status === 'saved' ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
         <td className="px-3 py-2 text-sm font-medium">
           <button onClick={handleToggleSamples} className="mr-1 text-gray-400 hover:text-gray-600 text-xs">{expanded ? '▼' : '▶'}</button>
-          {fields.name}{status === 'saved' && <span className="ml-2 text-green-600 text-xs">✓</span>}
+          {fields.name}
+          {status === 'saved' && <span className="ml-2 text-green-600 text-xs">✓</span>}
+          {jaRegex.test(fields.name) && <span className="ml-1.5 px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-xs">EN?</span>}
         </td>
         <td className="px-3 py-2 text-sm text-gray-600">{fields.name_ja || <span className="text-gray-300">—</span>}</td>
         <td className="px-3 py-2 text-sm">

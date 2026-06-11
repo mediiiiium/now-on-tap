@@ -151,11 +151,14 @@ function AdminContent() {
   useEffect(() => {
     Promise.all([
       sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', true).order('created_at', { ascending: false }),
+      sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', false).filter('name', 'match', '[\\u3040-\\u9FFF\\u3000-\\u303F]'),
       sb.from('styles').select('id, name, category').eq('needs_review', true).order('created_at', { ascending: false }),
       fetchBarCandidates(),
       fetchTapListAlerts(),
-    ]).then(([{ data: b }, { data: s }, bc, { alerts, noPosts: np }]) => {
-      setBreweries(b ?? []);
+    ]).then(([{ data: b }, { data: bLang }, { data: s }, bc, { alerts, noPosts: np }]) => {
+      const jaRegex = /[぀-ゟ゠-ヿ一-鿿]/;
+      const langIssues = (bLang ?? []).filter((br: { name: string }) => jaRegex.test(br.name));
+      setBreweries([...(b ?? []), ...langIssues]);
       setStyles(s ?? []);
       setBarCandidates(bc);
       setTapListAlerts(alerts);
