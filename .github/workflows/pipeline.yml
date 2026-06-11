@@ -46,6 +46,7 @@ jobs:
       - name: brewery名正規化・日英補完・ABV補完（直近7日分）
         run: |
           node scripts/normalize-breweries.js
+          node scripts/normalize-beers.js
           node scripts/fill-i18n.js
           node scripts/fill-abv-untappd.js
       - name: Trigger Cloudflare deploy
@@ -71,6 +72,7 @@ jobs:
       - name: brewery名正規化・日英補完・ABV補完（直近7日分）
         run: |
           node scripts/normalize-breweries.js
+          node scripts/normalize-beers.js
           node scripts/fill-i18n.js
           node scripts/fill-abv-untappd.js
       - name: Trigger Cloudflare deploy
