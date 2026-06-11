@@ -1,4 +1,7 @@
-// 1ヶ月以上タップリストが抽出できていないアカウントのアラートレポート
+// 週次アラートレポート: タップリスト異常 / 新規バー候補 / 新規ブルワリー / 未登録スタイル
+const { execSync } = require('child_process');
+const { DOMParser } = require('@xmldom/xmldom');
+const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -115,41 +118,142 @@ async function alertReportDirect() {
   return { alerts, healthy };
 }
 
-async function sendSlack(message) {
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-  if (!webhookUrl) return;
-  await fetch(webhookUrl, {
+async function sendSlack(text) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  const channel = process.env.SLACK_CHANNEL_ID;
+
+  // fallback: webhook
+  if (!token || !channel) {
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+    if (!webhookUrl) { console.log(text); return null; }
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    return null;
+  }
+
+  const res = await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: message }),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ channel, text }),
+  });
+  const json = await res.json();
+  return json.ts ?? null; // スレッド返信用タイムスタンプ
+}
+
+async function sendSlackThread(text, threadTs) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  const channel = process.env.SLACK_CHANNEL_ID;
+  if (!token || !channel || !threadTs) return;
+  await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ channel, text, thread_ts: threadTs }),
   });
 }
 
-async function main() {
-  const { alerts, healthy } = await alertReportDirect();
+const KML_URL = 'https://www.google.com/maps/d/kml?mid=1DaSgYBnJZnlWFmNFqvvHFqP6G_MxKGP4&forcekml=1';
+const KML_PATH = '/tmp/breweries_alert.kml';
 
-  let message = `*🍻 Now On Tap — 週次アラートレポート*\n${new Date().toLocaleDateString('ja-JP')}\n\n`;
+function fetchAndParseKml() {
+  execSync(`curl -sL "${KML_URL}" -o "${KML_PATH}"`);
+  const xml = fs.readFileSync(KML_PATH, 'utf8');
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const placemarks = doc.getElementsByTagName('Placemark');
+  const results = [];
+  for (let i = 0; i < placemarks.length; i++) {
+    const p = placemarks[i];
+    const name = p.getElementsByTagName('name')[0]?.textContent?.trim() ?? '';
+    const desc = p.getElementsByTagName('description')[0]?.textContent ?? '';
+    const fields = {};
+    for (const part of desc.split('<br>')) {
+      const idx = part.indexOf(': ');
+      if (idx > 0) fields[part.slice(0, idx).trim()] = part.slice(idx + 2).trim();
+    }
+    const igUrl = fields['Instagram'] ?? '';
+    const igMatch = igUrl.match(/instagram\.com\/([^/?"\s]+)/);
+    const instagram = igMatch ? igMatch[1].replace(/\/$/, '') : null;
+    const pref = fields['都道府県'] ?? null;
+    if (pref === '東京' && instagram) {
+      results.push({ name, instagram, type: fields['形態'] ?? null, nameEn: fields['Brewery'] ?? null });
+    }
+  }
+  return results;
+}
+
+async function newBarCandidates() {
+  const kmlBars = fetchAndParseKml();
+  const { data: registered } = await supabase.from('bars').select('instagram_username');
+  const registeredSet = new Set((registered ?? []).map(r => r.instagram_username.toLowerCase()));
+  return kmlBars.filter(b => !registeredSet.has(b.instagram.toLowerCase()));
+}
+
+async function newMasterReport() {
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // 直近1週間に追加されたブルワリー
+  const { data: newBreweries } = await supabase
+    .from('breweries')
+    .select('name, name_ja, prefecture, country, created_at')
+    .gte('created_at', oneWeekAgo)
+    .order('created_at', { ascending: false });
+
+  // beers.style でマスターにないスタイル
+  const { data: beerStyles } = await supabase
+    .from('beers')
+    .select('style')
+    .not('style', 'is', null);
+
+  const { data: masterStyles } = await supabase
+    .from('beer_styles')
+    .select('name');
+
+  const masterStyleNames = new Set((masterStyles ?? []).map(s => s.name));
+  const styleCounts = {};
+  for (const b of beerStyles ?? []) {
+    if (b.style && !masterStyleNames.has(b.style)) {
+      styleCounts[b.style] = (styleCounts[b.style] || 0) + 1;
+    }
+  }
+  const unmappedStyles = Object.entries(styleCounts)
+    .sort((a, b) => b[1] - a[1]);
+
+  return { newBreweries: newBreweries ?? [], unmappedStyles };
+}
+
+async function runNormalization() {
+  const { main: normalize } = require('./normalize-beers');
+  return await normalize();
+}
+
+const ADMIN_URL = 'https://now-on-tap.pages.dev/admin';
+
+async function main() {
+  // 正規化バッチを先に実行
+  const normResult = await runNormalization();
+
+  const { alerts, healthy } = await alertReportDirect();
+  const [{ newBreweries }, newBars] = await Promise.all([
+    newMasterReport(),
+    newBarCandidates(),
+  ]);
 
   const totalBars = alerts.length + healthy.length;
+  const date = new Date().toLocaleDateString('ja-JP');
+  const autoBreweriesCount = normResult?.newBreweries?.added ?? 0;
+  const unmatchedStylesCount = normResult?.newStyles?.added ?? 0;
+  const totalIssues = alerts.length + newBars.length + autoBreweriesCount + unmatchedStylesCount;
 
-  if (alerts.length === 0) {
-    message += `✅ 全アカウント正常\nDB登録済み: *${totalBars}店舗*`;
-  } else {
-    message += `DB登録済み: *${totalBars}店舗* / うち要確認: *${alerts.length}件*\n\n`;
-    message += `⚠️ *要確認アカウント*\n\n`;
-    for (const a of alerts) {
-      message += `*@${a.username}*\n`;
-      message += `　投稿${a.totalPosts}件 / タップリスト${a.tapListPosts}件 (${a.tapListRate})\n`;
-      message += `　最終投稿: ${a.lastPost} / 最終タップリスト: ${a.lastTapList}\n`;
-      message += `　${a.diagnosis}\n`;
-      message += `　<https://www.instagram.com/${a.username}/|Instagramを確認>\n\n`;
-    }
-    message += `✅ 正常: ${healthy.map(h => `@${h.username}`).join(', ')}`;
-  }
+  const msg = [
+    `*🍻 Now On Tap 週次レポート* ${date}`,
+    `店舗 *${totalBars}件* | TL要確認 *${alerts.length}件* | 新規バー候補 *${newBars.length}件* | ブルワリー自動追加 *${autoBreweriesCount}件* | スタイル未マッチ *${unmatchedStylesCount}件*`,
+    totalIssues > 0 ? `\n要確認: *${totalIssues}件* → <${ADMIN_URL}|管理画面で確認>` : '\n✅ 要確認なし',
+  ].join('\n');
 
-  console.log(message);
-  await sendSlack(message);
-  console.log('\nSlack通知送信完了');
+  await sendSlack(msg);
+  console.log('Slack通知送信完了');
 }
 
 main().catch(console.error);
