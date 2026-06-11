@@ -18,14 +18,17 @@ async function getFollowing(username) {
     await page.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
 
-    const userId = await page.evaluate(() => {
-      const scripts = Array.from(document.querySelectorAll('script'));
-      for (const s of scripts) {
-        const m = s.textContent.match(/"pk":"(\d+)"|"id":"(\d+)"/);
-        if (m) return m[1] || m[2];
-      }
-      return null;
-    });
+    // APIエンドポイントからユーザーID取得
+    const userInfo = await page.evaluate(async (username) => {
+      const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
+        credentials: 'include',
+        headers: { 'x-ig-app-id': '936619743392459' },
+      });
+      const json = await res.json();
+      return json?.data?.user?.id ?? null;
+    }, username);
+
+    const userId = userInfo;
 
     if (!userId) throw new Error('ユーザーIDが取得できませんでした');
     console.log(`@${username} ID: ${userId}`);

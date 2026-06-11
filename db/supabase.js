@@ -6,17 +6,39 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+async function getBar(instagramUsername) {
+  const { data } = await supabase
+    .from('bars')
+    .select('id, instagram_username, name, area')
+    .eq('instagram_username', instagramUsername)
+    .single();
+  return data ?? null;
+}
+
 async function upsertBar(instagramUsername, name = null, area = null) {
   const { data, error } = await supabase
     .from('bars')
-    .upsert({ instagram_username: instagramUsername, name, area }, { onConflict: 'instagram_username' })
+    .upsert({
+      instagram_username: instagramUsername,
+      name,
+      area,
+      last_scraped_at: new Date().toISOString(),
+    }, { onConflict: 'instagram_username' })
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-async function savePost({ instagramUsername, postId, postUrl, postedAt, isTapList, beers }) {
+async function markBarClosed(instagramUsername) {
+  const { error } = await supabase
+    .from('bars')
+    .update({ is_closed: true })
+    .eq('instagram_username', instagramUsername);
+  if (error) throw error;
+}
+
+async function savePost({ instagramUsername, postId, postUrl, postedAt, caption, isTapList, beers }) {
   // 既存チェック
   const { data: existing } = await supabase
     .from('posts')
@@ -37,6 +59,7 @@ async function savePost({ instagramUsername, postId, postUrl, postedAt, isTapLis
       post_id: postId,
       post_url: postUrl,
       posted_at: postedAt,
+      caption: caption ?? null,
       is_tap_list: isTapList,
     })
     .select()
@@ -49,7 +72,10 @@ async function savePost({ instagramUsername, postId, postUrl, postedAt, isTapLis
       post_id: post.id,
       instagram_username: instagramUsername,
       name: b.name,
+      name_ja: b.name_ja ?? null,
+      name_en: b.name_en ?? null,
       brewery: b.brewery,
+      brewery_en: b.brewery_en ?? null,
       style: b.style,
       abv: b.abv,
       price: b.price,
@@ -95,4 +121,4 @@ async function getCurrentTapLists() {
   return Object.values(bars);
 }
 
-module.exports = { upsertBar, savePost, getCurrentTapLists };
+module.exports = { getBar, upsertBar, markBarClosed, savePost, getCurrentTapLists };

@@ -16,5 +16,8 @@
     "@supabase/supabase-js": "^2.107.0",
     "dotenv": "^17.4.2",
     "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.9.10"
   }
 }

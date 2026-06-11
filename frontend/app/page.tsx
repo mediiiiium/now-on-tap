@@ -1,4 +1,4 @@
-import { getTapLists, Bar } from '@/lib/supabase';
+import { getTapLists, getStyleGroups, Bar, StyleGroup } from '@/lib/supabase';
 import Image from 'next/image';
 import BarList from './BarList';
 
@@ -6,8 +6,9 @@ export const revalidate = 3600;
 
 export default async function Home() {
   let bars: Bar[] = [];
+  let styleGroups: StyleGroup[] = [];
   try {
-    bars = await getTapLists();
+    [bars, styleGroups] = await Promise.all([getTapLists(), getStyleGroups()]);
   } catch (e) {
     console.error(e);
   }
@@ -32,7 +33,7 @@ export default async function Home() {
             <p>データを取得中です</p>
           </div>
         ) : (
-          <BarList bars={bars} />
+          <BarList bars={bars} styleGroups={styleGroups} />
         )}
       </div>
     </main>

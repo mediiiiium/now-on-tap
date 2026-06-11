@@ -1,6 +1,6 @@
 const { scrapeFeed } = require('./scraper/feed');
 const { analyzeTapList } = require('./analyzer/vision');
-const { savePost, upsertBar } = require('./db/supabase');
+const { savePost, getBar } = require('./db/supabase');
 require('dotenv').config();
 
 async function sendSlack(message) {
@@ -33,13 +33,20 @@ async function runPipeline() {
     process.stdout.write(`  @${post.username}/${post.postId} (${post.postedAt?.slice(0,10)})... `);
 
     try {
-      await upsertBar(post.username);
-      const analysis = await analyzeTapList(post.screenshotPath);
+      // barsテーブルに登録済みのアカウント（フォロー中）のみ処理
+      const bar = await getBar(post.username);
+      if (!bar) {
+        console.log(`⏭  @${post.username} はフォロー外のためスキップ`);
+        continue;
+      }
+
+      const analysis = await analyzeTapList(post.screenshotPath, post.caption ?? null);
       const result = await savePost({
-        instagramUsername: post.username,
+        instagramUsername: bar.instagram_username,
         postId: post.postId,
         postUrl: post.postUrl,
         postedAt: post.postedAt,
+        caption: post.caption ?? null,
         isTapList: analysis.is_tap_list,
         beers: analysis.beers,
       });

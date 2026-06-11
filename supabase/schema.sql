@@ -3,7 +3,9 @@ create table if not exists bars (
   id serial primary key,
   instagram_username text unique not null,
   name text,
-  area text,
+  name_en text,        -- 英語バー名（英語サイト向け）
+  area text,           -- エリア名（日本語）
+  area_en text,        -- エリア名（英語）
   created_at timestamptz default now()
 );
 
@@ -15,6 +17,7 @@ create table if not exists posts (
   post_id text unique not null,
   post_url text,
   posted_at timestamptz,
+  caption text,        -- Instagramキャプションテキスト
   is_tap_list boolean default false,
   scraped_at timestamptz default now()
 );
@@ -24,12 +27,15 @@ create table if not exists beers (
   id serial primary key,
   post_id integer references posts(id) on delete cascade,
   instagram_username text not null,
-  name text,
-  brewery text,
-  style text,
-  abv text,
-  price text,
-  notes text,
+  name text,           -- ビール名（画像の表記のまま）
+  name_ja text,        -- 日本語ビール名
+  name_en text,        -- 英語ビール名
+  brewery text,        -- ブルワリー名（英語正規化済み）
+  brewery_en text,     -- 英語ブルワリー名（normalize-breweries.js で設定）
+  style text,          -- ビアスタイル（英語正規化済み）
+  abv text,            -- アルコール度数
+  price text,          -- 価格
+  notes text,          -- その他メモ
   created_at timestamptz default now()
 );
 
@@ -37,12 +43,17 @@ create table if not exists beers (
 create or replace view current_tap_lists as
 select
   b.instagram_username,
-  b.name as bar_name,
+  b.name     as bar_name,
+  b.name_en  as bar_name_en,
   b.area,
+  b.area_en,
   p.posted_at as last_updated,
   p.post_url,
-  br.name as beer_name,
+  br.name        as beer_name,
+  br.name_ja     as beer_name_ja,
+  br.name_en     as beer_name_en,
   br.brewery,
+  br.brewery_en,
   br.style,
   br.abv,
   br.price,
@@ -59,7 +70,7 @@ join posts p on p.instagram_username = b.instagram_username
 join beers br on br.post_id = p.id
 where p.posted_at > now() - interval '7 days';
 
--- RLS無効（まずシンプルに）
+-- RLS
 alter table bars enable row level security;
 alter table posts enable row level security;
 alter table beers enable row level security;

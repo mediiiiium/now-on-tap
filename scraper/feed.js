@@ -108,11 +108,27 @@ async function screenshotPost(page, postUrl, outputPath) {
     return time ? time.getAttribute('datetime') : null;
   }).catch(() => null);
 
+  // キャプションテキストを取得
+  const caption = await page.evaluate(() => {
+    // 投稿本文のセレクタ（h1タグ or 長めのspan）
+    const selectors = [
+      'article h1',
+      'div[data-testid="post-comment-root"] span',
+      'main article ul li:first-child span',
+      'main article div > span[dir="auto"]',
+    ];
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 10) return el.textContent.trim();
+    }
+    return null;
+  }).catch(() => null);
+
   const main = page.locator('main').first();
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   await main.screenshot({ path: outputPath });
 
-  return { postUrl, postedAt, screenshotPath: outputPath };
+  return { postUrl, postedAt, screenshotPath: outputPath, caption };
 }
 
 module.exports = { scrapeFeed };

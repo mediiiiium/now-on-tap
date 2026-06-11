@@ -7,7 +7,10 @@ export const supabase = createClient(
 
 export type Beer = {
   name: string;
+  name_ja: string | null;   // 日本語ビール名
+  name_en: string | null;   // 英語ビール名
   brewery: string | null;
+  brewery_en: string | null; // 英語ブルワリー名
   style: string | null;
   abv: string | null;
   price: string | null;
@@ -17,12 +20,35 @@ export type Beer = {
 export type Bar = {
   instagram_username: string;
   bar_name: string | null;
+  bar_name_en: string | null; // 英語バー名
   area: string | null;
-  last_updated: string | null;   // タップリストなしの場合 null
+  area_en: string | null;     // 英語エリア名
+  last_updated: string | null;
   post_url: string | null;
+  caption: string | null;     // Instagramキャプション
   beers: Beer[];
-  has_tap_list: boolean;         // タップリストデータがあるか
+  has_tap_list: boolean;
 };
+
+export type StyleGroup = {
+  group_name: string;
+  styles: string[];
+};
+
+export async function getStyleGroups(): Promise<StyleGroup[]> {
+  const { data, error } = await supabase
+    .from('beer_styles')
+    .select('name, group_name')
+    .order('group_name');
+  if (error) throw error;
+
+  const groups: Record<string, string[]> = {};
+  for (const row of data ?? []) {
+    if (!groups[row.group_name]) groups[row.group_name] = [];
+    groups[row.group_name].push(row.name);
+  }
+  return Object.entries(groups).map(([group_name, styles]) => ({ group_name, styles }));
+}
 
 export async function getTapLists(): Promise<Bar[]> {
   const { data, error } = await supabase
@@ -39,9 +65,12 @@ export async function getTapLists(): Promise<Bar[]> {
       bars[key] = {
         instagram_username: key,
         bar_name: row.bar_name,
+        bar_name_en: row.bar_name_en,
         area: row.area,
+        area_en: row.area_en,
         last_updated: row.last_updated,
         post_url: row.post_url,
+        caption: row.caption ?? null,
         beers: [],
         has_tap_list: row.last_updated !== null,
       };
@@ -49,7 +78,10 @@ export async function getTapLists(): Promise<Bar[]> {
     if (row.beer_name) {
       bars[key].beers.push({
         name: row.beer_name,
+        name_ja: row.beer_name_ja,
+        name_en: row.beer_name_en,
         brewery: row.brewery,
+        brewery_en: row.brewery_en,
         style: row.style,
         abv: row.abv,
         price: row.price,
