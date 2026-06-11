@@ -6,7 +6,7 @@ import BreweryReview from './BreweryReview';
 import StyleReview from './StyleReview';
 import BarCandidates, { BarCandidate } from './BarCandidates';
 import TapListAlerts, { TapListAlert } from './TapListAlerts';
-import { sb } from './adminClient';
+import { sb, setBarStatus } from './adminClient';
 
 type Brewery = { id: number; name: string; name_ja: string | null; prefecture: string | null; country: string | null; website_url: string | null; untappd_url: string | null };
 type Style = { id: number; name: string; category: string };
@@ -41,13 +41,16 @@ async function fetchBarCandidates(): Promise<BarCandidate[]> {
   } catch { return []; }
 }
 
-async function fetchTapListAlerts(): Promise<TapListAlert[]> {
+export type NoPosts = { username: string };
+
+async function fetchTapListAlerts(): Promise<{ alerts: TapListAlert[]; noPosts: NoPosts[] }> {
   const [{ data: posts }, { data: bars }] = await Promise.all([
     sb.from('posts').select('instagram_username, posted_at, is_tap_list').order('posted_at', { ascending: false }),
     sb.from('bars').select('instagram_username, alert_snoozed_until, status'),
   ]);
   const barsMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null; status: string | null }) => [b.instagram_username, b]));
   const snoozedMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null }) => [b.instagram_username, b.alert_snoozed_until]));
+  const postedSet = new Set((posts ?? []).map((p: { instagram_username: string }) => p.instagram_username));
   const accounts: Record<string, { totalPosts: number; tapListPosts: number; lastTapList: string | null; lastPost: string | null }> = {};
   for (const post of posts ?? []) {
     const u = post.instagram_username;
@@ -78,7 +81,55 @@ async function fetchTapListAlerts(): Promise<TapListAlert[]> {
     else if (isActive && acc.totalPosts >= 5 && lastTapListDate && lastTapListDate < oneMonthAgo) { diagnosis = '⚠️ TL投稿1ヶ月以上なし'; severity = 'warn'; }
     if (severity !== 'ok') alerts.push({ username, totalPosts: acc.totalPosts, tapListPosts: acc.tapListPosts, tapListRate: `${tapListRate}%`, lastPost: daysSincePost !== null ? `${daysSincePost}日前` : 'なし', lastTapList: daysSinceTapList !== null ? `${daysSinceTapList}日前` : 'なし', diagnosis, severity });
   }
-  return alerts.sort((a, b) => (a.severity === 'error' ? -1 : 1) - (b.severity === 'error' ? -1 : 1));
+  const noPosts: NoPosts[] = (bars ?? [])
+    .filter((b: { instagram_username: string; status: string | null }) =>
+      !postedSet.has(b.instagram_username) && b.status !== 'inactive' && b.status !== 'closed'
+    )
+    .map((b: { instagram_username: string }) => ({ username: b.instagram_username }));
+
+  return {
+    alerts: alerts.sort((a, b) => (a.severity === 'error' ? -1 : 1) - (b.severity === 'error' ? -1 : 1)),
+    noPosts,
+  };
+}
+
+function NoPostsRow({ username }: { username: string }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'inactive' | 'closed'>('idle');
+  const busy = status === 'loading';
+
+  async function handleInactive() {
+    setStatus('loading');
+    try { await setBarStatus(username, 'inactive'); setStatus('inactive'); } catch { setStatus('idle'); }
+  }
+  async function handleClosed() {
+    if (!confirm(`@${username} を閉店にしますか？`)) return;
+    setStatus('loading');
+    try { await setBarStatus(username, 'closed'); setStatus('closed'); } catch { setStatus('idle'); }
+  }
+
+  if (status === 'inactive') return (
+    <tr className="opacity-40 border-b bg-gray-50">
+      <td className="px-3 py-2 text-sm text-gray-400">@{username}</td>
+      <td className="px-3 py-2 text-sm text-gray-500">📵 未稼動に設定</td>
+    </tr>
+  );
+  if (status === 'closed') return (
+    <tr className="opacity-40 border-b bg-red-50">
+      <td className="px-3 py-2 text-sm text-gray-400 line-through">@{username}</td>
+      <td className="px-3 py-2 text-sm text-red-500">🚪 閉店に設定</td>
+    </tr>
+  );
+  return (
+    <tr className="border-b hover:bg-gray-50">
+      <td className="px-3 py-2 text-sm font-medium">
+        <a href={`https://www.instagram.com/${username}/`} target="_blank" className="text-blue-600 hover:underline">@{username}</a>
+      </td>
+      <td className="px-3 py-2 whitespace-nowrap space-x-1">
+        <button onClick={handleInactive} disabled={busy} className="px-2 py-1 bg-yellow-100 text-yellow-800 text-sm rounded hover:bg-yellow-200 disabled:opacity-50">未稼動</button>
+        <button onClick={handleClosed} disabled={busy} className="px-2 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 disabled:opacity-50">閉店</button>
+      </td>
+    </tr>
+  );
 }
 
 function AdminContent() {
@@ -86,6 +137,7 @@ function AdminContent() {
   const [styles, setStyles] = useState<Style[]>([]);
   const [barCandidates, setBarCandidates] = useState<BarCandidate[]>([]);
   const [tapListAlerts, setTapListAlerts] = useState<TapListAlert[]>([]);
+  const [noPosts, setNoPosts] = useState<NoPosts[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -94,16 +146,17 @@ function AdminContent() {
       sb.from('styles').select('id, name, category').eq('needs_review', true).order('created_at', { ascending: false }),
       fetchBarCandidates(),
       fetchTapListAlerts(),
-    ]).then(([{ data: b }, { data: s }, bc, tla]) => {
+    ]).then(([{ data: b }, { data: s }, bc, { alerts, noPosts: np }]) => {
       setBreweries(b ?? []);
       setStyles(s ?? []);
       setBarCandidates(bc);
-      setTapListAlerts(tla);
+      setTapListAlerts(alerts);
+      setNoPosts(np);
       setLoading(false);
     });
   }, []);
 
-  const totalIssues = breweries.length + styles.length + barCandidates.length + tapListAlerts.length;
+  const totalIssues = breweries.length + styles.length + barCandidates.length + tapListAlerts.length + noPosts.length;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -128,6 +181,33 @@ function AdminContent() {
             </h2>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <TapListAlerts alerts={tapListAlerts} />
+            </div>
+          </section>
+          <section>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">
+              📭 投稿なし
+              <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{noPosts.length}件</span>
+            </h2>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {noPosts.length === 0 ? (
+                <p className="text-gray-500 py-8 text-center">投稿なしのバーはありません ✅</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 text-xs text-gray-500 uppercase">
+                        <th className="px-3 py-2">Account</th>
+                        <th className="px-3 py-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {noPosts.map(b => (
+                        <NoPostsRow key={b.username} username={b.username} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </section>
           <section>
