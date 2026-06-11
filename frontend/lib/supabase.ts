@@ -10,6 +10,7 @@ export type Beer = {
   name_ja: string | null;   // 日本語ビール名
   name_en: string | null;   // 英語ビール名
   brewery: string | null;
+  brewery_ja: string | null; // 日本語ブルワリー名
   brewery_en: string | null; // 英語ブルワリー名
   style: string | null;
   abv: string | null;
@@ -85,6 +86,7 @@ export async function getTapLists(): Promise<Bar[]> {
         name_ja: row.beer_name_ja,
         name_en: row.beer_name_en,
         brewery: row.brewery,
+        brewery_ja: row.brewery_ja ?? null,
         brewery_en: row.brewery_en,
         style: row.style,
         abv: row.abv,

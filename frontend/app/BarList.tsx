@@ -123,7 +123,7 @@ function BarCard({ bar, highlightStyles, highlightBrewery, locale }: {
               : (val(beer.name_ja) ?? val(beer.name));
             const breweryName = locale === 'en'
               ? (val(beer.brewery_en) ?? val(beer.brewery))
-              : val(beer.brewery);
+              : (val(beer.brewery_ja) ?? val(beer.brewery));
             return (
               <li key={i} className="px-5 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
