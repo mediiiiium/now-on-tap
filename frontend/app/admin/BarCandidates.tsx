@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { addBar, skipBar } from './adminClient';
+import { addBar, excludeBarCandidate } from './adminClient';
 
 export type BarCandidate = {
   name: string;
@@ -10,20 +10,20 @@ export type BarCandidate = {
   type: string | null;
 };
 
-type RowStatus = 'idle' | 'adding' | 'added' | 'skipped';
+type RowStatus = 'idle' | 'adding' | 'added' | 'excluded';
 
 function CandidateRow({ bar }: { bar: BarCandidate }) {
   const [status, setStatus] = useState<RowStatus>('idle');
-  const busy = status === 'adding' || status === 'added' || status === 'skipped';
+  const busy = status === 'adding' || status === 'added' || status === 'excluded';
 
   async function handleAdd() {
     setStatus('adding');
     try { await addBar(bar); setStatus('added'); } catch { setStatus('idle'); }
   }
 
-  async function handleSkip() {
-    setStatus('skipped');
-    try { await skipBar(bar.instagram); } catch { setStatus('idle'); }
+  async function handleExclude() {
+    setStatus('excluded');
+    try { await excludeBarCandidate(bar.instagram); } catch { setStatus('idle'); }
   }
 
   if (status === 'added') {
@@ -34,11 +34,11 @@ function CandidateRow({ bar }: { bar: BarCandidate }) {
       </tr>
     );
   }
-  if (status === 'skipped') {
+  if (status === 'excluded') {
     return (
       <tr className="opacity-40 border-b bg-gray-50">
         <td className="px-3 py-2 text-sm text-gray-400 line-through">{bar.name}</td>
-        <td colSpan={3} className="px-3 py-2 text-sm text-gray-400">スキップ</td>
+        <td colSpan={3} className="px-3 py-2 text-sm text-gray-400">除外済み</td>
       </tr>
     );
   }
@@ -52,7 +52,7 @@ function CandidateRow({ bar }: { bar: BarCandidate }) {
       <td className="px-3 py-2 text-sm text-gray-500">{bar.type ?? '—'}</td>
       <td className="px-3 py-2 whitespace-nowrap space-x-2">
         <button onClick={handleAdd} disabled={busy} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50">{status === 'adding' ? '追加中...' : '追加'}</button>
-        <button onClick={handleSkip} disabled={busy} className="px-3 py-1 bg-gray-100 text-sm rounded hover:bg-gray-200 disabled:opacity-50">スキップ</button>
+        <button onClick={handleExclude} disabled={busy} className="px-3 py-1 bg-orange-100 text-orange-700 text-sm rounded hover:bg-orange-200 disabled:opacity-50">除外</button>
       </td>
     </tr>
   );

@@ -51,8 +51,9 @@ export async function addBar(bar: { name: string; name_en: string | null; instag
   if (error) throw new Error(error.message);
 }
 
-export async function skipBar(_instagram: string) {
-  // スキップはDB記録なし（楽観的UIのみ）
+export async function excludeBarCandidate(instagram: string) {
+  const { error } = await sb.from('bars').insert({ instagram_username: instagram, status: 'excluded' });
+  if (error) throw new Error(error.message);
 }
 
 export async function snoozeAlert(instagram_username: string) {
