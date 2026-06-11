@@ -46,9 +46,9 @@ export type NoPosts = { username: string };
 async function fetchTapListAlerts(): Promise<{ alerts: TapListAlert[]; noPosts: NoPosts[] }> {
   const [{ data: posts }, { data: bars }] = await Promise.all([
     sb.from('posts').select('instagram_username, posted_at, is_tap_list').order('posted_at', { ascending: false }),
-    sb.from('bars').select('instagram_username, alert_snoozed_until, status, last_scraped_at'),
+    sb.from('bars').select('instagram_username, alert_snoozed_until, status, last_scraped_at, snooze_count'),
   ]);
-  const barsMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null; status: string | null; last_scraped_at: string | null }) => [b.instagram_username, b]));
+  const barsMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null; status: string | null; last_scraped_at: string | null; snooze_count: number | null }) => [b.instagram_username, b]));
   const snoozedMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null }) => [b.instagram_username, b.alert_snoozed_until]));
   const postedSet = new Set((posts ?? []).map((p: { instagram_username: string }) => p.instagram_username));
   const accounts: Record<string, { totalPosts: number; tapListPosts: number; lastTapList: string | null; lastPost: string | null }> = {};
@@ -84,7 +84,8 @@ async function fetchTapListAlerts(): Promise<{ alerts: TapListAlert[]; noPosts: 
         diagnosis = '⚠️ TL投稿1ヶ月以上なし'; severity = 'warn';
       }
     }
-    if (severity !== 'ok') alerts.push({ username, totalPosts: acc.totalPosts, tapListPosts: acc.tapListPosts, tapListRate: `${tapListRate}%`, lastPost: daysSincePost !== null ? `${daysSincePost}日前` : 'なし', lastTapList: daysSinceTapList !== null ? `${daysSinceTapList}日前` : 'なし', diagnosis, severity });
+    const snoozeCount = barsMap.get(username)?.snooze_count ?? 0;
+    if (severity !== 'ok') alerts.push({ username, totalPosts: acc.totalPosts, tapListPosts: acc.tapListPosts, tapListRate: `${tapListRate}%`, lastPost: daysSincePost !== null ? `${daysSincePost}日前` : 'なし', lastTapList: daysSinceTapList !== null ? `${daysSinceTapList}日前` : 'なし', diagnosis, severity, snoozeCount });
   }
   const noPosts: NoPosts[] = (bars ?? [])
     .filter((b: { instagram_username: string; status: string | null; last_scraped_at: string | null }) =>

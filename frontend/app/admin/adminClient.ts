@@ -72,7 +72,11 @@ export async function excludeBarCandidate(instagram: string) {
 
 export async function snoozeAlert(instagram_username: string) {
   const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { error } = await sb.from('bars').update({ alert_snoozed_until: until }).eq('instagram_username', instagram_username);
+  const { data: bar } = await sb.from('bars').select('snooze_count').eq('instagram_username', instagram_username).single();
+  const { error } = await sb.from('bars').update({
+    alert_snoozed_until: until,
+    snooze_count: (bar?.snooze_count ?? 0) + 1,
+  }).eq('instagram_username', instagram_username);
   if (error) throw new Error(error.message);
 }
 

@@ -12,6 +12,7 @@ export type TapListAlert = {
   lastTapList: string;
   diagnosis: string;
   severity: string;
+  snoozeCount: number;
 };
 
 type RowStatus = 'idle' | 'loading' | 'snoozed' | 'excluded';
@@ -51,6 +52,7 @@ function AlertRow({ alert }: { alert: TapListAlert }) {
     <tr className="border-b hover:bg-gray-50">
       <td className="px-3 py-2 text-sm font-medium">
         <a href={`https://www.instagram.com/${alert.username}/`} target="_blank" className="text-blue-600 hover:underline">@{alert.username}</a>
+        {alert.snoozeCount >= 3 && <span className="ml-1.5 px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-xs">{alert.snoozeCount}回</span>}
       </td>
       <td className="px-3 py-2 text-sm text-gray-600">
         投稿 {alert.totalPosts}件 / TL {alert.tapListPosts}件 ({alert.tapListRate})
@@ -71,10 +73,7 @@ function AlertRow({ alert }: { alert: TapListAlert }) {
   );
 }
 
-export default function TapListAlerts({ alerts }: { alerts: TapListAlert[] }) {
-  if (alerts.length === 0) {
-    return <p className="text-gray-500 py-8 text-center">タップリスト異常はありません ✅</p>;
-  }
+function AlertTable({ alerts }: { alerts: TapListAlert[] }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
@@ -89,6 +88,29 @@ export default function TapListAlerts({ alerts }: { alerts: TapListAlert[] }) {
         </thead>
         <tbody>{alerts.map(a => <AlertRow key={a.username} alert={a} />)}</tbody>
       </table>
+    </div>
+  );
+}
+
+export default function TapListAlerts({ alerts }: { alerts: TapListAlert[] }) {
+  if (alerts.length === 0) {
+    return <p className="text-gray-500 py-8 text-center">タップリスト異常はありません ✅</p>;
+  }
+
+  const chronic = alerts.filter(a => a.snoozeCount >= 3);
+  const normal = alerts.filter(a => a.snoozeCount < 3);
+
+  return (
+    <div>
+      {normal.length > 0 && <AlertTable alerts={normal} />}
+      {chronic.length > 0 && (
+        <div className="border-t border-red-200">
+          <div className="px-3 py-2 bg-red-50 text-xs font-semibold text-red-600">
+            🔁 慢性的に取れていない（スヌーズ3回以上）
+          </div>
+          <AlertTable alerts={chronic} />
+        </div>
+      )}
     </div>
   );
 }
