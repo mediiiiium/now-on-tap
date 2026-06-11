@@ -44,8 +44,9 @@ async function fetchBarCandidates(): Promise<BarCandidate[]> {
 async function fetchTapListAlerts(): Promise<TapListAlert[]> {
   const [{ data: posts }, { data: bars }] = await Promise.all([
     sb.from('posts').select('instagram_username, posted_at, is_tap_list').order('posted_at', { ascending: false }),
-    sb.from('bars').select('instagram_username, alert_snoozed_until'),
+    sb.from('bars').select('instagram_username, alert_snoozed_until, status'),
   ]);
+  const barsMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null; status: string | null }) => [b.instagram_username, b]));
   const snoozedMap = new Map((bars ?? []).map((b: { instagram_username: string; alert_snoozed_until: string | null }) => [b.instagram_username, b.alert_snoozed_until]));
   const accounts: Record<string, { totalPosts: number; tapListPosts: number; lastTapList: string | null; lastPost: string | null }> = {};
   for (const post of posts ?? []) {
@@ -62,6 +63,8 @@ async function fetchTapListAlerts(): Promise<TapListAlert[]> {
   const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const alerts: TapListAlert[] = [];
   for (const [username, acc] of Object.entries(accounts)) {
+    const bar = barsMap.get(username);
+    if (bar?.status === 'inactive' || bar?.status === 'closed') continue;
     const snoozedUntil = snoozedMap.get(username);
     if (snoozedUntil && new Date(snoozedUntil) > now) continue;
     const lastTapListDate = acc.lastTapList ? new Date(acc.lastTapList) : null;

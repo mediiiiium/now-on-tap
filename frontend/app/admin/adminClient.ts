@@ -60,3 +60,8 @@ export async function snoozeAlert(instagram_username: string) {
   const { error } = await sb.from('bars').update({ alert_snoozed_until: until }).eq('instagram_username', instagram_username);
   if (error) throw new Error(error.message);
 }
+
+export async function setBarStatus(instagram_username: string, status: 'inactive' | 'closed') {
+  const { error } = await sb.from('bars').update({ status }).eq('instagram_username', instagram_username);
+  if (error) throw new Error(error.message);
+}
