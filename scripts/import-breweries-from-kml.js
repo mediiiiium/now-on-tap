@@ -75,12 +75,17 @@ async function insertBrewery(entry) {
     name_ja: entry.name_ja || null,
     prefecture: prefectureLabel(entry.prefecture),
     country: 'JP',
+    website_url: entry.website || null,
   };
 
   const { data, error } = await supabase.from('breweries').insert(row).select('id').single();
   if (error) {
     if (error.code === '23505') {
-      const { data: ex } = await supabase.from('breweries').select('id').eq('name', name).single();
+      const { data: ex } = await supabase.from('breweries').select('id, website_url').eq('name', name).single();
+      // website_url が未設定なら補完
+      if (ex && !ex.website_url && entry.website) {
+        await supabase.from('breweries').update({ website_url: entry.website }).eq('id', ex.id);
+      }
       return ex?.id ?? null;
     }
     throw error;
