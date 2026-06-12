@@ -119,6 +119,10 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
             <option value="DE">🇩🇪 DE</option>
             <option value="NZ">🇳🇿 NZ</option>
             <option value="AU">🇦🇺 AU</option>
+            <option value="ES">🇪🇸 ES</option>
+            <option value="FR">🇫🇷 FR</option>
+            <option value="CZ">🇨🇿 CZ</option>
+            <option value="DK">🇩🇰 DK</option>
             <option value="">— 不明</option>
           </select>
         </td>
