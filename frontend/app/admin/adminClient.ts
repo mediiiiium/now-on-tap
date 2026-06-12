@@ -43,6 +43,12 @@ export async function getBrewerySamples(id: number): Promise<BrewerySample[]> {
 export const STYLE_CATEGORIES = ['Hoppy', 'Lager', 'Dark', 'Belgian', 'Wheat', 'Sour', 'Malt', 'Strong', 'Other'];
 
 export async function updateStyle(id: number, fields: { name?: string; category?: string }) {
+  if (fields.name) {
+    const { data: old } = await sb.from('styles').select('name').eq('id', id).single();
+    if (old && old.name !== fields.name) {
+      await sb.from('beers').update({ style: fields.name }).eq('style', old.name);
+    }
+  }
   const { error } = await sb.from('styles').update(fields).eq('id', id);
   if (error) throw new Error(error.message);
 }
