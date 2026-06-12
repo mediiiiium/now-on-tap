@@ -7,8 +7,7 @@
  *   node scripts/import-breweries-from-kml.js --bars    # 東京bars補完のみ
  *   node scripts/import-breweries-from-kml.js --dry-run
  */
-const fs = require('fs');
-const { DOMParser } = require('@xmldom/xmldom');
+const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -16,42 +15,44 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 const DRY_RUN = process.argv.includes('--dry-run');
 const BARS_ONLY = process.argv.includes('--bars');
 
-const KML_PATH = '/tmp/breweries_map.kml';
+const KML_URL = 'https://www.google.com/maps/d/kml?mid=1DaSgYBnJZnlWFmNFqvvHFqP6G_MxKGP4&forcekml=1';
 
-function parseKml() {
-  const xml = fs.readFileSync(KML_PATH, 'utf8');
-  const doc = new DOMParser().parseFromString(xml, 'text/xml');
-  const placemarks = doc.getElementsByTagName('Placemark');
+function fetchKml() {
+  return new Promise((resolve, reject) => {
+    https.get(KML_URL, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+function parseKml(xml) {
+  const placemarks = xml.split('<Placemark>').slice(1);
   const entries = [];
 
-  for (let i = 0; i < placemarks.length; i++) {
-    const p = placemarks[i];
-    const nameEl = p.getElementsByTagName('name')[0];
-    const descEl = p.getElementsByTagName('description')[0];
-    const name = nameEl?.textContent?.trim() ?? '';
-    const desc = descEl?.textContent ?? '';
+  for (const p of placemarks) {
+    const nameMatch = p.match(/<name><!\[CDATA\[(.*?)\]\]><\/name>/) ?? p.match(/<name>(.*?)<\/name>/);
+    const descMatch = p.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) ?? p.match(/<description>([\s\S]*?)<\/description>/);
+    const name = nameMatch?.[1]?.trim() ?? '';
+    const desc = descMatch?.[1] ?? '';
 
     const fields = {};
     for (const part of desc.split('<br>')) {
       const idx = part.indexOf(': ');
-      if (idx > 0) {
-        fields[part.slice(0, idx).trim()] = part.slice(idx + 2).trim();
-      }
+      if (idx > 0) fields[part.slice(0, idx).trim()] = part.slice(idx + 2).trim();
     }
 
-    const igUrl = fields['Instagram'] ?? '';
-    const igMatch = igUrl.match(/instagram\.com\/([^/?"\s]+)/);
+    const igMatch = (fields['Instagram'] ?? '').match(/instagram\.com\/([^/?"\s]+)/);
     const instagram = igMatch ? igMatch[1].replace(/\/$/, '') : null;
 
     entries.push({
       name_ja: name,
       name_en: fields['Brewery'] ?? null,
-      restaurant: fields['Restaurant'] ?? null,
-      address: fields['住所'] ?? null,
       prefecture: fields['都道府県'] ?? null,
       website: fields['Web'] ?? null,
       instagram,
-      type: fields['形態'] ?? null,  // ブルワリー or ブルーパブ
+      type: fields['形態'] ?? null,
     });
   }
   return entries;
@@ -93,8 +94,9 @@ async function updateBar(username, updates) {
 }
 
 async function main() {
-  console.log('📄 Parsing KML...');
-  const entries = parseKml();
+  console.log('📄 Fetching KML...');
+  const xml = await fetchKml();
+  const entries = parseKml(xml);
   console.log(`  ${entries.length} placemarks`);
 
   if (!BARS_ONLY) {
