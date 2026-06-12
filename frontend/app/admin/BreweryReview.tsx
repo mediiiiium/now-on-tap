@@ -64,7 +64,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
   }
 
   const busy = status === 'saving' || status === 'approved' || status === 'deleted';
-  const isAbroad = fields.country && fields.country !== '日本';
+  const isAbroad = fields.country && fields.country !== 'JP';
 
   if (status === 'approved') {
     return (
@@ -91,7 +91,20 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
       <tr className="bg-yellow-50 border-b">
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.name} onChange={e => setFields(f => ({ ...f, name: e.target.value }))} /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.name_ja} onChange={e => setFields(f => ({ ...f, name_ja: e.target.value }))} placeholder="日本語名" /></td>
-        <td className="px-3 py-2"><input className="w-20 border rounded px-2 py-1 text-sm" value={fields.country} onChange={e => setFields(f => ({ ...f, country: e.target.value }))} placeholder="国" /></td>
+        <td className="px-3 py-2">
+          <select className="w-20 border rounded px-2 py-1 text-sm" value={fields.country} onChange={e => setFields(f => ({ ...f, country: e.target.value }))}>
+            <option value="JP">🇯🇵 JP</option>
+            <option value="US">🇺🇸 US</option>
+            <option value="BE">🇧🇪 BE</option>
+            <option value="GB">🇬🇧 GB</option>
+            <option value="IE">🇮🇪 IE</option>
+            <option value="CA">🇨🇦 CA</option>
+            <option value="DE">🇩🇪 DE</option>
+            <option value="NZ">🇳🇿 NZ</option>
+            <option value="AU">🇦🇺 AU</option>
+            <option value="">— 不明</option>
+          </select>
+        </td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.prefecture} onChange={e => setFields(f => ({ ...f, prefecture: e.target.value }))} placeholder="都道府県" /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.website_url} onChange={e => setFields(f => ({ ...f, website_url: e.target.value }))} placeholder="https://..." /></td>
         <td className="px-3 py-2"><input className="w-full border rounded px-2 py-1 text-sm" value={fields.untappd_url} onChange={e => setFields(f => ({ ...f, untappd_url: e.target.value }))} placeholder="https://untappd.com/..." /></td>

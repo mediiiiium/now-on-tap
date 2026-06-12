@@ -73,7 +73,7 @@ async function insertBrewery(entry) {
     name,
     name_ja: entry.name_ja || null,
     prefecture: prefectureLabel(entry.prefecture),
-    country: 'Japan',
+    country: 'JP',
   };
 
   const { data, error } = await supabase.from('breweries').insert(row).select('id').single();

@@ -28,7 +28,7 @@ async function clusterBreweries(aliases) {
 ルール:
 - 英語名と日本語名が両方ある場合は両方出力
 - 日本のブルワリーは prefecture に都道府県名（例: 東京都, 大阪府）
-- 海外は country に国名（英語: Belgium, UK, USA等）、prefectureはnull
+- 海外は country に ISO 3166-1 alpha-2 コード（例: US, BE, GB, IE, CA）、prefectureはnull
 - コラボ表記（A x B）は代表的なブルワリー名で登録（xより前の最初のブルワリー）
 - 不明な場合はnull
 
@@ -38,7 +38,7 @@ async function clusterBreweries(aliases) {
     "name": "正式英語名",
     "name_ja": "日本語名またはnull",
     "prefecture": "都道府県またはnull",
-    "country": "Japan or 国名",
+    "country": "JP or ISO 3166-1 alpha-2コード",
     "aliases": ["この名前にマップすべき表記リスト"]
   }
 ]

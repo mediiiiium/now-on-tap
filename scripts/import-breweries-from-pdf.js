@@ -81,7 +81,7 @@ async function insertBrewery(brewery) {
     name: brewery.name,
     name_ja: brewery.name_ja ?? null,
     prefecture: brewery.prefecture ?? null,
-    country: 'Japan',
+    country: 'JP',
   };
 
   const { data: inserted, error: insertError } = await supabase
