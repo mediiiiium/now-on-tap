@@ -67,14 +67,16 @@ async function getRecentPosts(page, username, limit = 5) {
   await page.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
-  // Get post links
-  const postLinks = await page.evaluate((limit) => {
+  const { postLinks, bioLinks } = await page.evaluate((limit) => {
     const links = Array.from(document.querySelectorAll('a[href*="/p/"]'));
-    return [...new Set(links.map(a => a.href))].slice(0, limit);
+    const postLinks = [...new Set(links.map(a => a.href))].slice(0, limit);
+    // bio の外部リンク（untappd等）
+    const bioLinks = Array.from(document.querySelectorAll('a[href*="untappd.com"]')).map(a => a.href);
+    return { postLinks, bioLinks };
   }, limit);
 
   console.log(`Found ${postLinks.length} posts`);
-  return postLinks;
+  return { postLinks, bioLinks };
 }
 
 async function screenshotPost(page, postUrl, outputPath) {
@@ -126,7 +128,7 @@ async function scrapeBar(username) {
       console.log('Using saved session');
     }
 
-    const postLinks = await getRecentPosts(page, username, 5);
+    const { postLinks, bioLinks } = await getRecentPosts(page, username, 5);
     const results = [];
 
     for (const [i, url] of postLinks.entries()) {
@@ -148,7 +150,7 @@ async function scrapeBar(username) {
       }
     }
 
-    return results;
+    return { posts: results, bioLinks };
   } finally {
     await browser.close();
   }

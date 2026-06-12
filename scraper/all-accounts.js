@@ -40,8 +40,18 @@ async function scrapeAllAccounts() {
     console.log(`📍 @${account}`);
     try {
       await upsertBar(account);
-      const posts = await scrapeBar(account);
+      const { posts, bioLinks } = await scrapeBar(account);
       console.log(`  取得: ${posts.length}件の新規投稿`);
+
+      // bio に Untappd URL があれば保存
+      const untappdUrl = bioLinks.find(l => l.includes('untappd.com'));
+      if (untappdUrl) {
+        const { data: bar } = await supabase.from('bars').select('untappd_url').eq('instagram_username', account).single();
+        if (!bar?.untappd_url) {
+          await supabase.from('bars').update({ untappd_url: untappdUrl }).eq('instagram_username', account);
+          console.log(`  🍺 Untappd URL 登録: ${untappdUrl}`);
+        }
+      }
 
       // 最終投稿日チェック（投稿0件かつ last_scraped_at が初回以外の場合）
       if (posts.length === 0) {
