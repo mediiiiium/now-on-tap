@@ -10,6 +10,7 @@ export async function updateBrewery(id: number, oldName: string, fields: {
 }) {
   if (fields.name && fields.name !== oldName) {
     await sb.from('brewery_aliases').upsert({ brewery_id: id, alias: oldName }, { onConflict: 'alias' });
+    await sb.from('beers').update({ brewery: fields.name }).eq('brewery', oldName);
   }
   const { error } = await sb.from('breweries').update(fields).eq('id', id);
   if (error) throw new Error(error.message);
