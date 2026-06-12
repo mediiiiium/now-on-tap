@@ -32,7 +32,7 @@ left join lateral (
   from posts p2
   where p2.instagram_username = b.instagram_username
     and p2.is_tap_list = true
-    and p2.posted_at > now() - interval '7 days'
+    and p2.posted_at > now() - interval '10 days'
   order by p2.posted_at desc
   limit 1
 ) p on true
