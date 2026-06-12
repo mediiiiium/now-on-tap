@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { searchBeers, updateBeer, deleteBeer, type BeerRow } from './adminClient';
 
-type RowStatus = 'idle' | 'editing' | 'saving' | 'saved' | 'deleted';
+type RowStatus = 'idle' | 'editing' | 'saving' | 'deleted';
 
 function BeerRow({ beer }: { beer: BeerRow }) {
   const [status, setStatus] = useState<RowStatus>('idle');
@@ -29,8 +29,7 @@ function BeerRow({ beer }: { beer: BeerRow }) {
         abv: fields.abv || undefined,
         notes: fields.notes || undefined,
       });
-      setStatus('saved');
-      setTimeout(() => setStatus('idle'), 1500);
+      setStatus('idle');
     } catch { setStatus('editing'); }
   }
 
@@ -49,7 +48,7 @@ function BeerRow({ beer }: { beer: BeerRow }) {
     );
   }
 
-  if (status === 'editing' || status === 'saving' || status === 'saved') {
+  if (status === 'editing' || status === 'saving') {
     const busy = status === 'saving';
     return (
       <tr className="bg-yellow-50 border-b">
@@ -68,11 +67,8 @@ function BeerRow({ beer }: { beer: BeerRow }) {
   }
 
   return (
-    <tr className={`border-b hover:bg-gray-50 ${status === 'saved' ? 'bg-green-50' : ''}`}>
-      <td className="px-3 py-2 text-sm font-medium">
-        {fields.name}
-        {status === 'saved' && <span className="ml-1 text-green-600 text-xs">✓</span>}
-      </td>
+    <tr className="border-b hover:bg-gray-50">
+      <td className="px-3 py-2 text-sm font-medium">{fields.name}</td>
       <td className="px-3 py-2 text-xs text-gray-500">{fields.name_ja || <span className="text-gray-300">—</span>}</td>
       <td className="px-3 py-2 text-xs text-gray-500">{fields.brewery || <span className="text-gray-300">—</span>}</td>
       <td className="px-3 py-2 text-xs text-gray-500">{fields.style || <span className="text-gray-300">—</span>}</td>
