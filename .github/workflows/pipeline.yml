@@ -51,6 +51,7 @@ jobs:
           node scripts/delete-food-beers.js
           node scripts/fill-i18n.js
           node scripts/fill-abv-untappd.js
+          node scripts/fill-from-known-beers.js --skip-names
       - name: Trigger Cloudflare deploy
         run: curl -s -o /dev/null -w "%{http_code}" -d "" "${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}"
 
@@ -79,6 +80,7 @@ jobs:
           node scripts/delete-food-beers.js
           node scripts/fill-i18n.js
           node scripts/fill-abv-untappd.js
+          node scripts/fill-from-known-beers.js --skip-names
       - name: Trigger Cloudflare deploy
         run: curl -s -o /dev/null -w "%{http_code}" -d "" "${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}"
 
