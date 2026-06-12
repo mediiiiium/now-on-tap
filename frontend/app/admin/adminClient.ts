@@ -110,9 +110,18 @@ export async function searchBeers(query: string): Promise<BeerRow[]> {
     .order('id', { ascending: false })
     .limit(50);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((b: Record<string, unknown>) => ({
-    ...b,
-    posted_at: (b.posts as Record<string, string> | null)?.posted_at ?? '',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((b: any) => ({
+    id: b.id as number,
+    name: b.name as string,
+    name_ja: b.name_ja as string | null,
+    name_en: b.name_en as string | null,
+    brewery: b.brewery as string | null,
+    style: b.style as string | null,
+    abv: b.abv as string | null,
+    notes: b.notes as string | null,
+    instagram_username: b.instagram_username as string,
+    posted_at: (b.posts as { posted_at: string } | null)?.posted_at ?? '',
   }));
 }
 
