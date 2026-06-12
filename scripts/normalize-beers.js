@@ -26,6 +26,7 @@ async function resolveBreweriesWithClaude(unmatchedNames, breweries) {
     messages: [{
       role: 'user',
       content: `ビールに記載されたブルワリー名をマスタIDに紐付けてください。省略形・別名・表記揺れを考慮してください。マッチしない場合はnullにしてください。
+確信が持てない場合（似ているが同一か不明、略称で複数候補あり等）はconfidenceをlowにしてください。
 
 ## 紐付けたい名前
 ${unmatchedNames.join('\n')}
@@ -34,10 +35,20 @@ ${unmatchedNames.join('\n')}
 ${list}
 
 ## 出力（JSONのみ）
-{"名前": id_or_null, ...}`,
+{"名前": {"id": id_or_null, "confidence": "high" or "low"}, ...}`,
     }],
   });
-  return parseJson(msg.content[0].text);
+  // confidence=low のマッチは null 扱い（新規登録でneeds_review=true）
+  const raw = parseJson(msg.content[0].text);
+  const result = {};
+  for (const [name, val] of Object.entries(raw)) {
+    if (val && typeof val === 'object') {
+      result[name] = val.confidence === 'high' ? val.id : null;
+    } else {
+      result[name] = val; // 旧形式フォールバック
+    }
+  }
+  return result;
 }
 
 async function resolveStylesWithClaude(unmatchedStyles, masterStyles) {
