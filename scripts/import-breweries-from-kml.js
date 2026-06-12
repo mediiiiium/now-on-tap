@@ -141,6 +141,7 @@ async function main() {
 
     const updates = {};
     if (!bar.name_en && entry.name_en) updates.name_en = entry.name_en;
+    if (!bar.name && entry.name_ja) updates.name = entry.name_ja;
     // 住所からエリア補完は別途
 
     if (Object.keys(updates).length === 0) continue;
