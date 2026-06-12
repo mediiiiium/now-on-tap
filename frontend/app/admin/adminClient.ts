@@ -80,6 +80,11 @@ export async function snoozeAlert(instagram_username: string) {
   if (error) throw new Error(error.message);
 }
 
+export async function setBreweryCollab(id: number, is_collab: boolean) {
+  const { error } = await sb.from('breweries').update({ is_collab, needs_review: false }).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 export async function setBarStatus(instagram_username: string, status: 'inactive' | 'closed') {
   const { error } = await sb.from('bars').update({ status }).eq('instagram_username', instagram_username);
   if (error) throw new Error(error.message);

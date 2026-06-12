@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers, getBrewerySamples, type BrewerySample } from './adminClient';
+import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers, getBrewerySamples, setBreweryCollab, type BrewerySample } from './adminClient';
 
 const jaRegex = /[぀-ゟ゠-ヿ一-鿿]/;
 
@@ -15,7 +15,9 @@ type Brewery = {
   untappd_url: string | null;
 };
 
-type RowStatus = 'idle' | 'saving' | 'saved' | 'approved' | 'deleted';
+const collabRegex = /[×x×]/i;
+
+type RowStatus = 'idle' | 'saving' | 'saved' | 'approved' | 'deleted' | 'collab';
 
 function BreweryRow({ brewery }: { brewery: Brewery }) {
   const [expanded, setExpanded] = useState(false);
@@ -53,6 +55,11 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
     try { await approveBrewery(brewery.id); } catch { setStatus('idle'); }
   }
 
+  async function handleCollab() {
+    setStatus('collab');
+    try { await setBreweryCollab(brewery.id, true); } catch { setStatus('idle'); }
+  }
+
   async function handleDelete() {
     const beerCount = await countBreweryBeers(brewery.id);
     const msg = beerCount > 0
@@ -63,7 +70,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
     try { await deleteBrewery(brewery.id); } catch { setStatus('idle'); }
   }
 
-  const busy = status === 'saving' || status === 'approved' || status === 'deleted';
+  const busy = status === 'saving' || status === 'approved' || status === 'deleted' || status === 'collab';
   const isAbroad = fields.country && fields.country !== 'JP';
 
   if (status === 'approved') {
@@ -71,6 +78,16 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
       <tr className="opacity-40 transition-opacity duration-500 border-b bg-green-50">
         <td className="px-3 py-2 text-sm font-medium text-gray-400">{fields.name}</td>
         <td colSpan={4} className="px-3 py-2 text-sm text-green-600">✓ 承認済み</td>
+        <td />
+      </tr>
+    );
+  }
+
+  if (status === 'collab') {
+    return (
+      <tr className="opacity-40 transition-opacity duration-500 border-b bg-purple-50">
+        <td className="px-3 py-2 text-sm font-medium text-gray-400">{fields.name}</td>
+        <td colSpan={4} className="px-3 py-2 text-sm text-purple-600">🤝 コラボとしてマーク済み</td>
         <td />
       </tr>
     );
@@ -130,6 +147,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
           {fields.name}
           {status === 'saved' && <span className="ml-2 text-green-600 text-xs">✓</span>}
           {jaRegex.test(fields.name) && <span className="ml-1.5 px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-xs">EN?</span>}
+          {collabRegex.test(fields.name) && <span className="ml-1.5 px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded text-xs">コラボ?</span>}
         </td>
         <td className="px-3 py-2 text-sm text-gray-600">{fields.name_ja || <span className="text-gray-300">—</span>}</td>
         <td className="px-3 py-2 text-sm">
@@ -143,6 +161,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
         <td className="px-3 py-2 whitespace-nowrap space-x-2">
           <button onClick={() => setEditing(true)} className="px-3 py-1 bg-gray-100 text-sm rounded hover:bg-gray-200">編集</button>
           <button onClick={handleApprove} disabled={busy} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50">承認</button>
+          {collabRegex.test(fields.name) && <button onClick={handleCollab} disabled={busy} className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded hover:bg-purple-200 disabled:opacity-50">コラボ</button>}
           <button onClick={handleDelete} disabled={busy} className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 disabled:opacity-50">削除</button>
         </td>
       </tr>

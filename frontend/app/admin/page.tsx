@@ -150,8 +150,8 @@ function AdminContent() {
 
   useEffect(() => {
     Promise.all([
-      sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', true).order('created_at', { ascending: false }),
-      sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', false).filter('name', 'match', '[\\u3040-\\u9FFF\\u3000-\\u303F]'),
+      sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', true).eq('is_collab', false).order('created_at', { ascending: false }),
+      sb.from('breweries').select('id, name, name_ja, prefecture, country, website_url, untappd_url').eq('needs_review', false).eq('is_collab', false).filter('name', 'match', '[\\u3040-\\u9FFF\\u3000-\\u303F]'),
       sb.from('styles').select('id, name, category').eq('needs_review', true).order('created_at', { ascending: false }),
       fetchBarCandidates(),
       fetchTapListAlerts(),
