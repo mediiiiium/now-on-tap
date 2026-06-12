@@ -78,6 +78,17 @@ async function insertBrewery(entry) {
     website_url: entry.website || null,
   };
 
+  // name_ja で既存チェック（英語名なしの場合に重複防止）
+  if (entry.name_ja) {
+    const { data: byJa } = await supabase.from('breweries').select('id, website_url').eq('name_ja', entry.name_ja).single();
+    if (byJa) {
+      if (!byJa.website_url && entry.website) {
+        await supabase.from('breweries').update({ website_url: entry.website }).eq('id', byJa.id);
+      }
+      return byJa.id;
+    }
+  }
+
   const { data, error } = await supabase.from('breweries').insert(row).select('id').single();
   if (error) {
     if (error.code === '23505') {
