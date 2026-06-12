@@ -27,7 +27,7 @@ function BreweryRow({ brewery }: { brewery: Brewery }) {
     name: brewery.name,
     name_ja: brewery.name_ja ?? '',
     prefecture: brewery.prefecture ?? '',
-    country: brewery.country ?? '日本',
+    country: brewery.country ?? 'JP',
     website_url: brewery.website_url ?? '',
     untappd_url: brewery.untappd_url ?? '',
   });
