@@ -6,6 +6,7 @@ import BreweryReview from './BreweryReview';
 import StyleReview from './StyleReview';
 import BarCandidates, { BarCandidate } from './BarCandidates';
 import TapListAlerts, { TapListAlert } from './TapListAlerts';
+import BeerSearch from './BeerSearch';
 import { sb, setBarStatus } from './adminClient';
 
 type Brewery = { id: number; name: string; name_ja: string | null; prefecture: string | null; country: string | null; website_url: string | null; untappd_url: string | null };
@@ -185,6 +186,12 @@ function AdminContent() {
         <div className="flex items-center justify-center py-32 text-gray-400">読み込み中...</div>
       ) : (
         <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+          <section>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">🔍 ビール検索・編集</h2>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <BeerSearch />
+            </div>
+          </section>
           <section>
             <h2 className="text-sm font-semibold text-gray-700 mb-3">
               ⚠️ タップリスト要確認

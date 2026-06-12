@@ -80,6 +80,45 @@ export async function snoozeAlert(instagram_username: string) {
   if (error) throw new Error(error.message);
 }
 
+export type BeerRow = {
+  id: number;
+  name: string;
+  name_ja: string | null;
+  name_en: string | null;
+  brewery: string | null;
+  style: string | null;
+  abv: string | null;
+  notes: string | null;
+  instagram_username: string;
+  posted_at: string;
+};
+
+export async function searchBeers(query: string): Promise<BeerRow[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const { data, error } = await sb
+    .from('beers')
+    .select('id, name, name_ja, name_en, brewery, style, abv, notes, instagram_username, posts(posted_at)')
+    .or(`name.ilike.%${q}%,brewery.ilike.%${q}%,instagram_username.ilike.%${q}%`)
+    .order('id', { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((b: Record<string, unknown>) => ({
+    ...b,
+    posted_at: (b.posts as Record<string, string> | null)?.posted_at ?? '',
+  }));
+}
+
+export async function updateBeer(id: number, fields: { name?: string; name_ja?: string; name_en?: string; brewery?: string; style?: string; abv?: string; notes?: string }) {
+  const { error } = await sb.from('beers').update(fields).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteBeer(id: number) {
+  const { error } = await sb.from('beers').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 export async function setBreweryCollab(id: number, is_collab: boolean) {
   const { error } = await sb.from('breweries').update({ is_collab, needs_review: false }).eq('id', id);
   if (error) throw new Error(error.message);
