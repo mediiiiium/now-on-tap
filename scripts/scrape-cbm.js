@@ -62,11 +62,12 @@ async function scrapeStore({ slug, username, prefix }) {
   const tmpPath = path.join(TMP_DIR, `${slug}.jpg`);
   await downloadImage(imageUrl, tmpPath);
 
-  // bars テーブルの last_scraped_at を更新
-  await supabase
+  const { data: bar } = await supabase
     .from('bars')
     .update({ last_scraped_at: new Date().toISOString() })
-    .eq('instagram_username', username);
+    .eq('instagram_username', username)
+    .select('id')
+    .single();
 
   // CBMは確実にタップリストなので分類をスキップして直接抽出
   const base64Image = fs.readFileSync(tmpPath).toString('base64');
@@ -90,31 +91,17 @@ async function scrapeStore({ slug, username, prefix }) {
     return { is_tap_list: false };
   }
 
-  // 投稿保存
-  const { data: post, error: postError } = await supabase.from('posts').insert({
-    instagram_username: username,
-    post_id: postId,
-    post_url: 'https://www.craftbeermarket.jp/todays-beer-list/',
-    posted_at: new Date().toISOString(),
-    caption: null,
-    is_tap_list: true,
-  }).select().single();
-  if (postError) throw new Error(postError.message);
-
-  // ビール保存
-  for (const beer of beers) {
-    await supabase.from('beers').insert({
-      post_id: post.id,
-      instagram_username: username,
-      name: beer.name,
-      name_ja: beer.name_ja ?? null,
-      name_en: beer.name_en ?? null,
-      brewery: beer.brewery ?? null,
-      brewery_en: beer.brewery_en ?? null,
-      style: beer.style ?? null,
-      abv: beer.abv ?? null,
-    });
-  }
+  const { error } = await supabase.rpc('save_post_with_beers', {
+    p_bar_id: bar?.id ?? null,
+    p_instagram: username,
+    p_post_id: postId,
+    p_post_url: 'https://www.craftbeermarket.jp/todays-beer-list/',
+    p_posted_at: new Date().toISOString(),
+    p_caption: null,
+    p_is_tap_list: true,
+    p_beers: beers,
+  });
+  if (error) throw new Error(error.message);
 
   console.log(`  ✅ ${username} タップリスト (${beers.length}ビール)`);
   return { is_tap_list: true, beerCount: beers.length };

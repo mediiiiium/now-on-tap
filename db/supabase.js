@@ -39,7 +39,6 @@ async function markBarClosed(instagramUsername) {
 }
 
 async function savePost({ instagramUsername, postId, postUrl, postedAt, caption, isTapList, beers }) {
-  // 既存チェック
   const { data: existing } = await supabase
     .from('posts')
     .select('id')
@@ -47,48 +46,21 @@ async function savePost({ instagramUsername, postId, postUrl, postedAt, caption,
     .single();
   if (existing) return { skipped: true, postDbId: existing.id };
 
-  // バーを取得/作成
   const bar = await upsertBar(instagramUsername);
 
-  // 投稿を保存
-  const { data: post, error: postError } = await supabase
-    .from('posts')
-    .insert({
-      bar_id: bar.id,
-      instagram_username: instagramUsername,
-      post_id: postId,
-      post_url: postUrl,
-      posted_at: postedAt,
-      caption: caption ?? null,
-      is_tap_list: isTapList,
-    })
-    .select()
-    .single();
-  if (postError) throw postError;
+  const { data, error } = await supabase.rpc('save_post_with_beers', {
+    p_bar_id: bar.id,
+    p_instagram: instagramUsername,
+    p_post_id: postId,
+    p_post_url: postUrl,
+    p_posted_at: postedAt,
+    p_caption: caption ?? null,
+    p_is_tap_list: isTapList,
+    p_beers: (isTapList && beers?.length > 0) ? beers : [],
+  });
+  if (error) throw error;
 
-  // ビールを保存（失敗時は投稿レコードを補償削除して整合性を保つ）
-  if (isTapList && beers?.length > 0) {
-    const beerRows = beers.map(b => ({
-      post_id: post.id,
-      instagram_username: instagramUsername,
-      name: b.name,
-      name_ja: b.name_ja ?? null,
-      name_en: b.name_en ?? null,
-      brewery: b.brewery,
-      brewery_en: b.brewery_en ?? null,
-      style: b.style,
-      abv: b.abv,
-      price: b.price,
-      notes: b.notes,
-    }));
-    const { error: beerError } = await supabase.from('beers').insert(beerRows);
-    if (beerError) {
-      await supabase.from('posts').delete().eq('id', post.id);
-      throw beerError;
-    }
-  }
-
-  return { skipped: false, postDbId: post.id };
+  return { skipped: false, postDbId: data };
 }
 
 async function getCurrentTapLists() {

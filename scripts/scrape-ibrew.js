@@ -173,18 +173,19 @@ async function saveStore(username, beers) {
     return { is_tap_list: false };
   }
 
-  await supabase.from('bars').update({ last_scraped_at: new Date().toISOString() }).eq('instagram_username', username);
+  const { data: bar } = await supabase.from('bars').update({ last_scraped_at: new Date().toISOString() }).eq('instagram_username', username).select('id').single();
 
-  const { data: post, error } = await supabase.from('posts').insert({
-    instagram_username: username, post_id: postId,
-    post_url: 'https://www.instagram.com/' + username + '/',
-    posted_at: new Date().toISOString(), caption: null, is_tap_list: true,
-  }).select().single();
+  const { error } = await supabase.rpc('save_post_with_beers', {
+    p_bar_id: bar?.id ?? null,
+    p_instagram: username,
+    p_post_id: postId,
+    p_post_url: 'https://www.instagram.com/' + username + '/',
+    p_posted_at: new Date().toISOString(),
+    p_caption: null,
+    p_is_tap_list: true,
+    p_beers: beers,
+  });
   if (error) throw new Error(error.message);
-
-  for (const beer of beers) {
-    await supabase.from('beers').insert({ post_id: post.id, instagram_username: username, ...beer });
-  }
 
   console.log(`  ✅ ${username} タップリスト (${beers.length}ビール)`);
   return { is_tap_list: true, beerCount: beers.length };

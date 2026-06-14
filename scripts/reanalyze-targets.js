@@ -43,8 +43,9 @@ async function reanalyze() {
 
       if (!analysis.is_tap_list) {
         if (post.is_tap_list) {
-          await supabase.from('posts').update({ is_tap_list: false }).eq('id', post.id);
-          await supabase.from('beers').delete().eq('post_id', post.id);
+          await supabase.rpc('replace_post_beers', {
+            p_post_id: post.id, p_instagram: barUsername, p_is_tap_list: false,
+          });
           console.log('🔄 is_tap_list false に修正');
           updated++;
         } else {
@@ -54,24 +55,20 @@ async function reanalyze() {
         continue;
       }
 
-      await supabase.from('beers').delete().eq('post_id', post.id);
-      if (analysis.beers.length > 0) {
-        const rows = analysis.beers.map(b => ({
-          post_id: post.id,
-          instagram_username: barUsername,
-          name: b.name,
-          name_ja: b.name_ja ?? null,
-          name_en: b.name_en ?? null,
-          brewery: b.brewery,
-          brewery_en: b.brewery_en ?? null,
-          style: b.style,
-          abv: b.abv,
-          price: b.price,
-          notes: b.notes,
-        }));
-        await supabase.from('beers').insert(rows);
-      }
-      await supabase.from('posts').update({ is_tap_list: true }).eq('id', post.id);
+      const beerData = analysis.beers.map(b => ({
+        name: b.name,
+        name_ja: b.name_ja ?? null,
+        name_en: b.name_en ?? null,
+        brewery: b.brewery,
+        brewery_en: b.brewery_en ?? null,
+        style: b.style,
+        abv: b.abv,
+        price: b.price,
+        notes: b.notes,
+      }));
+      await supabase.rpc('replace_post_beers', {
+        p_post_id: post.id, p_instagram: barUsername, p_is_tap_list: true, p_beers: beerData,
+      });
       console.log(`✅ ${analysis.beers.length}件`);
       updated++;
 
