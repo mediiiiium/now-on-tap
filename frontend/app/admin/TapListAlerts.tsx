@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { snoozeAlert, setBarStatus } from './adminClient';
+import { snoozeAlert, setBarStatus } from './actions';
 
 export type TapListAlert = {
   username: string;

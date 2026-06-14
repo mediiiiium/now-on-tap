@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { updateStyle, approveStyle, deleteStyle, STYLE_CATEGORIES } from './adminClient';
+import { updateStyle, approveStyle, deleteStyle } from './actions';
+import { STYLE_CATEGORIES } from './constants';
 
 type Style = {
   id: number;

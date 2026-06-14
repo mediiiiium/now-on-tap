@@ -51,9 +51,7 @@ create policy "public read breweries"       on breweries       for select using 
 create policy "public read brewery_aliases" on brewery_aliases for select using (true);
 create policy "public read styles"          on styles          for select using (true);
 create policy "public read style_aliases"   on style_aliases   for select using (true);
-create policy "anon update breweries"       on breweries       for update using (true) with check (true);
-create policy "anon delete breweries"       on breweries       for delete using (true);
-create policy "anon update beers brewery"   on beers           for update using (true) with check (true);
+-- 書き込みはservice_role key経由のみ（RLSで匿名ユーザーへの書き込み権限は付与しない）
 
 -- スタイルマスタ初期データ
 insert into styles (name, category, display_order) values

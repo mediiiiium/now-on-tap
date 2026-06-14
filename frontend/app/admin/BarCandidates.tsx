@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { addBar, excludeBarCandidate } from './adminClient';
+import { addBar, excludeBarCandidate } from './actions';
 
 export type BarCandidate = {
   name: string;

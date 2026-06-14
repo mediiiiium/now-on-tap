@@ -1,80 +1,97 @@
-'use server';
+import type { BeerRow, BrewerySample } from './constants';
+export type { BeerRow, BrewerySample };
+export { STYLE_CATEGORIES } from './constants';
 
-import { createClient } from '@supabase/supabase-js';
-import { revalidatePath } from 'next/cache';
+async function api(path: string, body: unknown): Promise<Response> {
+  const res = await fetch(`/api/admin/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => 'Request failed');
+    throw new Error(text);
+  }
+  return res;
+}
 
-const sb = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// ── Brewery ──────────────────────────────────────────────────────────────────
 
 export async function updateBrewery(id: number, oldName: string, fields: {
-  name?: string;
-  name_ja?: string;
-  prefecture?: string;
-  website_url?: string;
-  untappd_url?: string;
+  name?: string; name_ja?: string; prefecture?: string; country?: string; website_url?: string; untappd_url?: string;
 }) {
-  // name変更時は旧nameをエイリアスに保存
-  if (fields.name && fields.name !== oldName) {
-    await sb.from('brewery_aliases').upsert({ brewery_id: id, alias: oldName }, { onConflict: 'alias' });
-  }
-  const { error } = await sb.from('breweries').update(fields).eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('brewery/update', { id, oldName, fields });
 }
 
 export async function approveBrewery(id: number) {
-  const { error } = await sb.from('breweries').update({ needs_review: false }).eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('brewery/approve', { id });
 }
 
 export async function deleteBrewery(id: number) {
-  const { error } = await sb.from('breweries').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('brewery/delete', { id });
 }
 
-const STYLE_CATEGORIES = ['Hoppy', 'Lager', 'Dark', 'Belgian', 'Wheat', 'Sour', 'Malt', 'Strong', 'Other'];
+export async function setBreweryCollab(id: number, is_collab: boolean) {
+  await api('brewery/collab', { id, is_collab });
+}
 
-export { STYLE_CATEGORIES };
+export async function countBreweryBeers(id: number): Promise<number> {
+  const res = await api('brewery/count-beers', { id });
+  const data = await res.json();
+  return data.count;
+}
+
+export async function getBrewerySamples(id: number): Promise<BrewerySample[]> {
+  const res = await api('brewery/samples', { id });
+  return res.json();
+}
+
+// ── Style ────────────────────────────────────────────────────────────────────
 
 export async function updateStyle(id: number, fields: { name?: string; category?: string }) {
-  const { error } = await sb.from('styles').update(fields).eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('style/update', { id, fields });
 }
 
 export async function approveStyle(id: number) {
-  const { error } = await sb.from('styles').update({ needs_review: false }).eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('style/approve', { id });
 }
 
 export async function deleteStyle(id: number) {
-  const { error } = await sb.from('styles').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('style/delete', { id });
 }
 
-export async function addBar(bar: { name: string; name_en: string | null; instagram: string; type: string | null }) {
-  const { error } = await sb.from('bars').insert({
-    instagram_username: bar.instagram,
-    name: bar.name,
-    name_en: bar.name_en ?? null,
-  });
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+// ── Bar ──────────────────────────────────────────────────────────────────────
+
+export async function addBar(bar: { name: string; name_en: string | null; instagram: string; type?: string | null }) {
+  await api('bar/add', { bar });
 }
 
-export async function skipBar(instagram: string) {
-  // スキップはDBに記録せず楽観的UIのみ（次回KML照合で再表示）
+export async function excludeBarCandidate(instagram: string) {
+  await api('bar/exclude', { instagram });
 }
 
 export async function snoozeAlert(instagram_username: string) {
-  const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { error } = await sb.from('bars').update({ alert_snoozed_until: until }).eq('instagram_username', instagram_username);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin');
+  await api('bar/snooze', { instagram_username });
+}
+
+export async function setBarStatus(instagram_username: string, status: 'inactive' | 'closed') {
+  await api('bar/status', { instagram_username, status });
+}
+
+// ── Beer ─────────────────────────────────────────────────────────────────────
+
+export async function searchBeers(query: string): Promise<BeerRow[]> {
+  const res = await api('beer/search', { query });
+  return res.json();
+}
+
+export async function updateBeer(id: number, fields: {
+  name?: string; name_ja?: string; name_en?: string;
+  brewery?: string; style?: string; abv?: string; notes?: string;
+}) {
+  await api('beer/update', { id, fields });
+}
+
+export async function deleteBeer(id: number) {
+  await api('beer/delete', { id });
 }

@@ -33,7 +33,7 @@ async function upsertBar(instagramUsername, name = null, area = null) {
 async function markBarClosed(instagramUsername) {
   const { error } = await supabase
     .from('bars')
-    .update({ is_closed: true })
+    .update({ status: 'closed' })
     .eq('instagram_username', instagramUsername);
   if (error) throw error;
 }
@@ -66,7 +66,7 @@ async function savePost({ instagramUsername, postId, postUrl, postedAt, caption,
     .single();
   if (postError) throw postError;
 
-  // ビールを保存
+  // ビールを保存（失敗時は投稿レコードを補償削除して整合性を保つ）
   if (isTapList && beers?.length > 0) {
     const beerRows = beers.map(b => ({
       post_id: post.id,
@@ -82,7 +82,10 @@ async function savePost({ instagramUsername, postId, postUrl, postedAt, caption,
       notes: b.notes,
     }));
     const { error: beerError } = await supabase.from('beers').insert(beerRows);
-    if (beerError) throw beerError;
+    if (beerError) {
+      await supabase.from('posts').delete().eq('id', post.id);
+      throw beerError;
+    }
   }
 
   return { skipped: false, postDbId: post.id };

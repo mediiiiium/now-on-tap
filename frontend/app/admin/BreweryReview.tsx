@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers, getBrewerySamples, setBreweryCollab, type BrewerySample } from './adminClient';
+import { updateBrewery, approveBrewery, deleteBrewery, countBreweryBeers, getBrewerySamples, setBreweryCollab } from './actions';
+import type { BrewerySample } from './constants';
 
 const jaRegex = /[぀-ゟ゠-ヿ一-鿿]/;
 

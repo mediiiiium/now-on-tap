@@ -11,7 +11,7 @@ async function getAllBarAccounts() {
   const { data, error } = await supabase
     .from('bars')
     .select('instagram_username')
-    .eq('is_closed', false)
+    .eq('status', 'active')
     .order('instagram_username');
   if (error) throw error;
   return data.map(r => r.instagram_username);
@@ -86,6 +86,11 @@ async function scrapeAllAccounts() {
         }
       }
     } catch (err) {
+      if (err.message === 'SESSION_EXPIRED') {
+        await notifySlack('🚨 *Instagram セッション切れ* — 再ログインが必要です。\n`node scraper/instagram.js <account>` を実行してセッションを更新してください。');
+        console.error('\n🚨 Instagramセッション切れ。処理を中断します。');
+        process.exit(1);
+      }
       console.error(`  ❌ ${err.message}`);
       // アカウント取得失敗 = 削除・非公開の可能性
       if (err.message.includes('404') || err.message.includes('not found') || err.message.includes('private')) {
@@ -98,7 +103,7 @@ async function scrapeAllAccounts() {
 
   // 閉店候補をSlack通知
   if (closedCandidates.length > 0) {
-    const msg = `⚠️ *閉店・非公開の可能性があるアカウント（要確認）*\n${closedCandidates.map(a => `• @${a}`).join('\n')}\n確認後 \`UPDATE bars SET is_closed = true WHERE instagram_username = '...';\` で対応してください`;
+    const msg = `⚠️ *閉店・非公開の可能性があるアカウント（要確認）*\n${closedCandidates.map(a => `• @${a}`).join('\n')}\n確認後 \`UPDATE bars SET status = 'closed' WHERE instagram_username = '...';\` で対応してください`;
     await notifySlack(msg);
     console.log(`\n⚠️  閉店候補: ${closedCandidates.join(', ')}`);
   }

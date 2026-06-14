@@ -126,6 +126,10 @@ async function scrapeBar(username) {
       await saveSession(context);
     } else {
       console.log('Using saved session');
+      const loggedIn = await isLoggedIn(page);
+      if (!loggedIn) {
+        throw new Error('SESSION_EXPIRED');
+      }
     }
 
     const { postLinks, bioLinks } = await getRecentPosts(page, username, 5);

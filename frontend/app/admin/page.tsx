@@ -7,7 +7,8 @@ import StyleReview from './StyleReview';
 import BarCandidates, { BarCandidate } from './BarCandidates';
 import TapListAlerts, { TapListAlert } from './TapListAlerts';
 import BeerSearch from './BeerSearch';
-import { sb, setBarStatus } from './adminClient';
+import { setBarStatus } from './actions';
+import { sb } from './adminClient';
 
 type Brewery = { id: number; name: string; name_ja: string | null; prefecture: string | null; country: string | null; website_url: string | null; untappd_url: string | null };
 type Style = { id: number; name: string; category: string };

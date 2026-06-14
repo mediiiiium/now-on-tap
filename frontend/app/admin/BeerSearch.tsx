@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { searchBeers, updateBeer, deleteBeer, type BeerRow } from './adminClient';
+import { searchBeers, updateBeer, deleteBeer } from './actions';
+import type { BeerRow } from './constants';
 
 type RowStatus = 'idle' | 'editing' | 'saving' | 'deleted';
 

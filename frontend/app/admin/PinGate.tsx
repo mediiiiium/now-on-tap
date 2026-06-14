@@ -2,31 +2,40 @@
 
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'admin_authed';
-const PIN = process.env.NEXT_PUBLIC_ADMIN_PIN ?? '';
-
 export default function PinGate({ children }: { children: React.ReactNode }) {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    setAuthed(localStorage.getItem(STORAGE_KEY) === 'true');
+    fetch('/api/admin/session')
+      .then(res => setAuthed(res.ok))
+      .catch(() => setAuthed(false));
   }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (input === PIN) {
-      localStorage.setItem(STORAGE_KEY, 'true');
-      setAuthed(true);
-    } else {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: input }),
+      });
+      if (res.ok) {
+        setAuthed(true);
+      } else {
+        setError(true);
+        setInput('');
+        setTimeout(() => setError(false), 1500);
+      }
+    } catch {
       setError(true);
       setInput('');
       setTimeout(() => setError(false), 1500);
     }
   }
 
-  if (authed === null) return null; // hydration待ち
+  if (authed === null) return null;
 
   if (!authed) {
     return (
